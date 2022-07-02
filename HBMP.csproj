@@ -40,6 +40,9 @@
     <Reference Include="Assembly-CSharp-firstpass">
       <HintPath>bin\Debug\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
+    <Reference Include="HBMP">
+      <HintPath>..\..\VisualStudioProjects\HBMP\bin\Debug\HBMP.dll</HintPath>
+    </Reference>
     <Reference Include="MelonLoader">
       <HintPath>D:\Korbens Games\Steam\steamapps\common\Hard Bullet\MelonLoader\MelonLoader.dll</HintPath>
     </Reference>

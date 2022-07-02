@@ -22,11 +22,16 @@ namespace HBMP.Nodes
 
         public Server()
         {
+            if (DiscordIntegration.isConnected)
+            {
+                throw new Exception("Cannot start a server while connected to a lobby");
+            }
+
             MakeLobby();
         }
         
         public override void UserConnectedEvent(long lobbyId, long userId) {
-            // currentSceneIndex shouldn't ever be larger than 255 so a byte is fine
+            MelonLogger.Msg("user connected to server!");
             DiscordIntegration.activity.Party.Size.CurrentSize = 1 + connectedUsers.Count;
             DiscordIntegration.activityManager.UpdateActivity(DiscordIntegration.activity, (res) => { });
 

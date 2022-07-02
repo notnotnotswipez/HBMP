@@ -48,6 +48,11 @@ namespace HBMP.Object
                 Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, packetByteBuf.getBytes());
 
                 MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
+                if (!relatedSyncedObjects.ContainsKey(groupId))
+                {
+                    return;
+                }
+                MelonLogger.Msg("Related sync objects count of transferred ownership object is: "+relatedSyncedObjects[groupId].Count);
                 foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
                 {
                     MelonLogger.Msg("Transferred ownership of related sync part: "+relatedSync.gameObject.name);
