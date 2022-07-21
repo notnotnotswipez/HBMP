@@ -1,6 +1,12 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using FirearmSystem;
 using GameCore.Effects;
 using HBMP.Nodes;
 using HBMP.Object;
+using HBMP.Patches;
+using UnityEngine;
 
 namespace HBMP.Messages.Handlers
 {
@@ -26,15 +32,18 @@ namespace HBMP.Messages.Handlers
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
             if (syncedObject)
             {
-                foreach (PlayMuzzleFlashFromPool muzzleFlash in syncedObject.GetComponentsInChildren<PlayMuzzleFlashFromPool>()) {
-                    muzzleFlash.PlayEffect();
+                PatchVariables.shouldIgnoreFire = true;
+                DefaultSupply defaultSupply = syncedObject.GetComponentInChildren<DefaultSupply>();
+                ProjectileContainer container = defaultSupply.DefaultProjectileContainer;
+                Type projectileContainerType = typeof(ProjectileContainer);
+                FieldInfo objectList = projectileContainerType.GetField("_projectilePrefab", BindingFlags.NonPublic | BindingFlags.Instance);
+                GameObject projectile = (GameObject)objectList.GetValue(container);
+                
+                foreach (Chamber chamber in syncedObject.GetComponentsInChildren<Chamber>()) {
+                    chamber.InjectBulletInChamber(projectile);
+                    chamber.TryShot();
                 }
-            }
-            
-            if (Server.instance != null)
-            {
-                byte[] byteArray = WriteTypeToBeginning(NetworkMessageType.GunshotMessage, packetByteBuf);
-                Server.instance.BroadcastMessageExcept((byte)NetworkChannel.Object, byteArray, userId);
+                PatchVariables.shouldIgnoreFire = false;
             }
         }
     }

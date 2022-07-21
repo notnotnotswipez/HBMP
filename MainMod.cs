@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using BulletMenuVR;
 using FirearmSystem;
 using HarmonyLib;
 using HBMP.DataType;
@@ -8,32 +9,81 @@ using HBMP.Messages.Handlers;
 using HBMP.Nodes;
 using HBMP.Object;
 using HBMP.Representations;
+using HBMP.Utils;
 using InteractionSystem;
 using MelonLoader;
+using NodeCanvas.Framework;
 using UnityEngine;
 using UnityEngine.Networking;
+using Node = HBMP.Nodes.Node;
 
 namespace HBMP
 {
     public class MainMod : MelonMod
     {
+        public static GameObject npcPrefab;
+        public static Vector3 tpPos;
+
         private PlayerRepresentation debugRepresentation;
         public override void OnApplicationStart()
         {
             MessageHandler.RegisterHandlers();
             DiscordIntegration.Init();
             Client.StartClient();
+            VrMenuPageBuilder builder = VrMenuPageBuilder.Builder();
+
+            builder.AddButton(new VrMenuButton("Start Server", () =>
+            {
+                Server.StartServer();
+            }, Color.green
+                ));
+
+            builder.AddButton(new VrMenuButton("End Server/Disconnect", () => 
+            {
+                if (DiscordIntegration.hasLobby && DiscordIntegration.isHost)
+                {
+                    Server.instance.Shutdown();
+                }
+                else if (DiscordIntegration.isConnected)
+                {
+                    Client.instance.DisconnectFromServer();
+                }
+            }, Color.red
+                ));
+
+            VrMenuPage page = builder.Build();
+
+            VrMenu.RegisterMainButton(new VrMenuButton("HBMP", () =>
+                {
+                    page.Open();
+                }, Color.blue
+            ));
         }
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
             Mod.Start();
             SyncedObject.CleanData();
+            
+            if (Server.instance != null)
+            {
+                PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.SceneTransferMessage, new SceneTransferData()
+                {
+                    sceneIndex = buildIndex
+                });
+                
+                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, message.getBytes());
+            }
         }
         
         public override void OnFixedUpdate()
         {
             if (DiscordIntegration.hasLobby)
             {
+                foreach (EnemyRoot spawnedRoot in SyncedObject.spawnedEnemies)
+                {
+                    spawnedRoot.gameObject.GetComponentInChildren<Blackboard>().SetVariableValue("Target", HBMF.r.playerloc);
+                }
+
                 Transform rightHand = GameObject
                     .Find("[HARD BULLET PLAYER]/HexaBody/RightArm/Hand/HVR_CustomHandRight Variant").transform;
                 Transform leftHand = GameObject
@@ -86,46 +136,40 @@ namespace HBMP
 
         public override void OnLateUpdate() {
             // This will update and flush discords callbacks
-            DiscordIntegration.Flush();
+            DiscordIntegration.Tick();
         }
+
         public override void OnUpdate()
         {
             if (Input.GetKeyDown(KeyCode.H))
             {
-                Server.StartServer();
+                if (Server.instance == null)
+                {
+                    Server.StartServer();
+                }
             }
 
-            if (Input.GetKeyDown(KeyCode.O))
+            if (Input.GetKeyDown(KeyCode.P))
             {
-                debugRepresentation = new PlayerRepresentation(DiscordIntegration.currentUser);
+                tpPos = GameObject.Find("[HARD BULLET PLAYER]/HexaBody/Pelvis/CameraRig/FloorOffset/Scaler/Camera").transform.position;
             }
+
             if (Input.GetKeyDown(KeyCode.L))
             {
-                if (DiscordIntegration.hasLobby && DiscordIntegration.isHost)
-                {
-                    Server.instance.Shutdown();
-                }
-                else if (DiscordIntegration.isConnected)
-                {
-                    Client.instance.DisconnectFromServer();
-                }
+                PlayerUtils.TeleportPlayer(tpPos);
             }
-            DiscordIntegration.Update();
         }
     }
 
     public class Mod : MonoBehaviour
     {
-        private static List<GameObject> players;
         private static string id;
-        private static bool connected = false;
         public static GameObject player;
 
-        public static String[] versionString = new[] { "0", "7", "0" };
+        public static String[] versionString = new[] { "1", "1", "5" };
 
         public static void Start()
         {
-            players = new List<GameObject>();
             AssetBundle localAssetBundle = AssetBundle.LoadFromFile(MelonUtils.UserDataDirectory+"/HBMP/player.hbmp");
             player = localAssetBundle.LoadAsset<GameObject>("1_Player.prefab");
             localAssetBundle.Unload(false);

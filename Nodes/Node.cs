@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Discord;
+using HBMF;
 using HBMP.Messages;
 using HBMP.Object;
 using HBMP.Representations;
@@ -55,7 +56,7 @@ namespace HBMP.Nodes
         {
             if (connectedUsers.Contains(userId))
                 return;
-
+            
             MelonLogger.Msg("Added "+userId+" to connected users.");
             connectedUsers.Add(userId);
             DiscordIntegration.userManager.GetUser(userId, OnDiscordUserFetched);
@@ -109,7 +110,9 @@ namespace HBMP.Nodes
             connectedUsers.ForEach((user) => { SendMessage(user, channel, data); });
 
             if (!isServer)
+            {
                 SendMessage(DiscordIntegration.lobby.OwnerId, channel, data);
+            }
         }
         
         public virtual void UserConnectedEvent(long lobbyId, long userId) { }

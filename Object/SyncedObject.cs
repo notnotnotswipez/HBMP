@@ -8,6 +8,7 @@ using HBMP.Messages;
 using HBMP.Messages.Handlers;
 using HBMP.Nodes;
 using MelonLoader;
+using NodeCanvas.StateMachines;
 using RootMotion.Dynamics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,11 +18,14 @@ namespace HBMP.Object
     public class SyncedObject : MonoBehaviour
     {
         public static Dictionary<ushort, SyncedObject> syncedObjectIds = new Dictionary<ushort, SyncedObject>();
+        public static Dictionary<EnemyRoot, long> returnedEnemyRoots = new Dictionary<EnemyRoot, long>();
+        public static List<EnemyRoot> spawnedEnemies = new List<EnemyRoot>();
         public static List<GameObject> syncedObjects = new List<GameObject>();
         public static Dictionary<ushort, List<SyncedObject>> relatedSyncedObjects =
             new Dictionary<ushort, List<SyncedObject>>();
-        
-        public Vector3 lastPos = new Vector3();
+
+        public static List<HealthContainer> deadContainers = new List<HealthContainer>();
+
         public Vector3 lastPosition;
         public Quaternion lastRotation;
         public static ushort lastId = 0;
@@ -29,6 +33,15 @@ namespace HBMP.Object
         public long simulatorId = 0;
         public ushort currentId = 0;
         public ushort groupId = 0;
+        public bool isNpc = false;
+
+        public void Start()
+        {
+            if (isNPC(gameObject))
+            {
+                isNpc = true;
+            }
+        }
 
         public void BroadcastOwnerChange()
         {
@@ -48,11 +61,6 @@ namespace HBMP.Object
                 Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, packetByteBuf.getBytes());
 
                 MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
-                if (!relatedSyncedObjects.ContainsKey(groupId))
-                {
-                    return;
-                }
-                MelonLogger.Msg("Related sync objects count of transferred ownership object is: "+relatedSyncedObjects[groupId].Count);
                 foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
                 {
                     MelonLogger.Msg("Transferred ownership of related sync part: "+relatedSync.gameObject.name);
@@ -61,18 +69,54 @@ namespace HBMP.Object
             }
         }
 
+        public void ManualSetOwner(long userId, bool checkForSelfOwner)
+        {
+            if (checkForSelfOwner)
+            {
+                if (!IsClientSimulated())
+                {
+                    return;
+                }
+            }
+
+            MelonLogger.Msg("Manually setting owner to: "+userId);
+            MelonLogger.Msg("Transferred ownership of sync Id: "+currentId);
+            SetOwner(userId);
+            OwnerChangeData ownerQueueChangeData = new OwnerChangeData()
+            {
+                userId = userId,
+                objectId = currentId
+            };
+            PacketByteBuf packetByteBuf = MessageHandler.CompressMessage(NetworkMessageType.OwnerChangeMessage,
+                ownerQueueChangeData);
+            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, packetByteBuf.getBytes());
+
+            MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
+            foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
+            {
+                MelonLogger.Msg("Transferred ownership of related sync part: "+relatedSync.gameObject.name);
+                relatedSync.SetOwner(userId);
+            }
+        }
+
         public static void CleanData()
         {
             lastId = 0;
             lastGroupId = 0;
-            syncedObjectIds.Clear();
             foreach (GameObject gameObject in syncedObjects)
             {
-                SyncedObject syncedObject = gameObject.GetComponent<SyncedObject>();
-                Destroy(syncedObject);
+                if (gameObject != null)
+                {
+                    SyncedObject syncedObject = gameObject.GetComponent<SyncedObject>();
+                    Destroy(syncedObject);
+                }
             }
+            syncedObjectIds.Clear();
             syncedObjects.Clear();
             relatedSyncedObjects.Clear();
+            returnedEnemyRoots.Clear();
+            deadContainers.Clear();
+            spawnedEnemies.Clear();
         }
 
         public static void MakeSyncedObject(GameObject gameObject, ushort objectId, long ownerId, ushort groupId)
@@ -106,6 +150,7 @@ namespace HBMP.Object
             syncedObjects.Add(gameObject);
             syncedObject.SetOwner(ownerId);
             syncedObject.currentId = objectId;
+            syncedObject.groupId = groupId;
             MelonLogger.Msg("Made sync object for: "+gameObject.name+", with an ID of: "+objectId+", and group ID of: "+groupId);
             MelonLogger.Msg("Owner: "+ownerId);
             syncedObjectIds.Add(objectId, syncedObject);
@@ -117,7 +162,12 @@ namespace HBMP.Object
             {
                 return;
             }
-            
+
+            if (desiredSync.gameObject.name.ToLower().Contains("chain"))
+            {
+                return;
+            }
+
             if (desiredSync.GetComponent<SyncedObject>() != null)
             {
                 return;
@@ -132,15 +182,102 @@ namespace HBMP.Object
             
             if (isNPC(desiredSync))
             {
+                EnemyRoot enemyRoot = null;
                 foreach (Rigidbody rigidbody in GetProperRigidBodies(desiredSync.transform, true)) {
                     GameObject npcObj = rigidbody.gameObject;
                     BroadcastSyncData(npcObj, groupId);
+                    if (enemyRoot == null)
+                    {
+                        enemyRoot = npcObj.GetComponentInParent<EnemyRoot>();
+                    }
+                }
+
+                if (enemyRoot != null)
+                {
+                    // Also sync enemy root, for better ownership transfer, as only syncing the physical bones causes mismatch between clients.
+                    BroadcastSyncData(enemyRoot.gameObject, groupId);
                 }
                 return;
             }
             
             
             BroadcastSyncData(desiredSync, groupId);
+        }
+
+        public static void SyncNPC(EnemyRoot enemyRoot, bool shouldRevert)
+        {
+            if (enemyRoot.gameObject.GetComponent<SyncedObject>())
+            {
+                return;
+            }
+            
+            ushort groupId = GetGroupId();
+            EnemySpawnMessageData enemySpawnMessageData = new EnemySpawnMessageData()
+            {
+                userId = DiscordIntegration.currentUser.Id,
+                groupId = groupId,
+                startingObjectId = lastId,
+                shouldRevertToOwner = shouldRevert
+            };
+
+            PacketByteBuf packetByteBuf =
+                MessageHandler.CompressMessage(NetworkMessageType.EnemySpawnMessage, enemySpawnMessageData);
+
+            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+
+            long currentUser = DiscordIntegration.currentUser.Id;
+            GameObject spawnedNPC = enemyRoot.gameObject;
+            foreach (Rigidbody rigidbody in GetProperRigidBodies(spawnedNPC.transform, true)) {
+                GameObject npcObj = rigidbody.gameObject;
+                FutureProofSync(npcObj, groupId, currentUser);
+                if (enemyRoot == null)
+                {
+                    enemyRoot = npcObj.GetComponentInParent<EnemyRoot>();
+                }
+            }
+
+            if (enemyRoot != null)
+            {
+                FutureProofSync(enemyRoot.gameObject, groupId, currentUser);
+            }
+
+            lastId++;
+        }
+
+        public static void FutureProofSync(GameObject gameObject, ushort groupId, long ownerId)
+        {
+            if (lastGroupId <= groupId)
+            {
+                lastGroupId = groupId;
+                lastGroupId++;
+            }
+            ushort syncedId = GetObjectId();
+            
+            SyncedObject syncedObject = gameObject.AddComponent<SyncedObject>();
+            if (relatedSyncedObjects.ContainsKey(groupId))
+            {
+                List<SyncedObject> otherSynced = relatedSyncedObjects[groupId];
+                if (!otherSynced.Contains(syncedObject))
+                {
+                    otherSynced.Add(syncedObject);
+                }
+                relatedSyncedObjects[groupId] = otherSynced;
+            }
+            else
+            {
+                List<SyncedObject> otherSynced = new List<SyncedObject>();
+                otherSynced.Add(syncedObject);
+                relatedSyncedObjects.Add(groupId, otherSynced);
+            }
+            
+            syncedObject.SetOwner(ownerId);
+            syncedObject.groupId = groupId;
+            syncedObject.currentId = syncedId;
+            syncedObjects.Add(gameObject);
+            if (!syncedObjectIds.ContainsKey(syncedId))
+            {
+                syncedObjectIds.Add(syncedId, syncedObject);
+            }
         }
 
         private static void BroadcastSyncData(GameObject gameObject, ushort groupId)
@@ -158,16 +295,18 @@ namespace HBMP.Object
                 if (!otherSynced.Contains(syncedObject))
                 {
                     otherSynced.Add(syncedObject);
-                    MelonLogger.Msg("Added related sync in group ID: "+groupId);
                 }
+
+                relatedSyncedObjects[groupId] = otherSynced;
             }
             else
             {
                 List<SyncedObject> otherSynced = new List<SyncedObject>();
                 otherSynced.Add(syncedObject);
                 relatedSyncedObjects.Add(groupId, otherSynced);
-                MelonLogger.Msg("Added related sync in group ID: "+groupId);
             }
+
+            syncedObject.groupId = groupId;
             syncedObject.currentId = syncedId;
             syncedObject.SetOwner(DiscordIntegration.currentUser.Id);
             syncedObjects.Add(gameObject);
@@ -191,13 +330,14 @@ namespace HBMP.Object
             PacketByteBuf packetByteBuf =
                 MessageHandler.CompressMessage(NetworkMessageType.InitializeSyncMessage, initializeSyncData);
             
-            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, packetByteBuf.getBytes());
+            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
         }
 
         private void OnOwnershipChange(bool owning)
         {
             if (owning)
             {
+
                 Rigidbody rigidbody = gameObject.GetComponent<Rigidbody>();
                 if (rigidbody)
                 {
@@ -206,9 +346,17 @@ namespace HBMP.Object
                         rigidbody.isKinematic = false;
                     }
                 }
+                
+                EnemyRoot root = gameObject.GetComponentInParent<EnemyRoot>();
+                HealthContainer healthContainer = null;
+                if (root)
+                {
+                    healthContainer = root.HealthContainer;
+                }
 
                 AnimatorBonesPinner animatorBonesPinner = gameObject.GetComponentInParent<AnimatorBonesPinner>();
                 PuppetMaster puppetMaster = gameObject.GetComponentInParent<PuppetMaster>();
+                
                 if (animatorBonesPinner)
                 {
                     Type bonesPinner = typeof(AnimatorBonesPinner);
@@ -219,6 +367,7 @@ namespace HBMP.Object
                         isActive.SetValue(animatorBonesPinner,false);
                     }
                 }
+                
 
                 if (puppetMaster)
                 {
@@ -232,6 +381,14 @@ namespace HBMP.Object
             {
                 AnimatorBonesPinner animatorBonesPinner = gameObject.GetComponentInParent<AnimatorBonesPinner>();
                 PuppetMaster puppetMaster = gameObject.GetComponentInParent<PuppetMaster>();
+                
+                EnemyRoot root = gameObject.GetComponentInParent<EnemyRoot>();
+                HealthContainer healthContainer = null;
+                if (root)
+                {
+                    healthContainer = root.HealthContainer;
+                }
+
                 if (animatorBonesPinner)
                 {
                     Type bonesPinner = typeof(AnimatorBonesPinner);
@@ -242,12 +399,18 @@ namespace HBMP.Object
                         isActive.SetValue(animatorBonesPinner,true);
                     }
                 }
+                
                 if (puppetMaster)
                 {
                     if (puppetMaster.enabled)
                     {
                         puppetMaster.enabled = false;
                     }
+                }
+
+                if (!Node.activeNode.connectedUsers.Contains(simulatorId))
+                {
+                    SetOwner(DiscordIntegration.lobby.OwnerId);
                 }
             }
         }
@@ -284,6 +447,21 @@ namespace HBMP.Object
             }
 
             return null;
+        }
+
+        public static EnemyRoot FindEnemyRoot(GameObject gameObject)
+        {
+            EnemyRoot foundBody = gameObject.transform.GetComponentInParent<EnemyRoot>();
+            if (!foundBody)
+            {
+                foundBody = gameObject.transform.GetComponent<EnemyRoot>();
+                if (!foundBody)
+                {
+                    gameObject.transform.GetComponentInChildren<EnemyRoot>();
+                }
+            }
+
+            return foundBody;
         }
 
         public static Rigidbody[] GetProperRigidBodies(Transform transform, bool checkForNpc)
@@ -441,8 +619,8 @@ namespace HBMP.Object
                 return;
             }
 
-            bool shouldSendUpdate = HasChangedPositions() || isNPC(gameObject);
-            if (IsClientSimulated() && HasChangedPositions())
+            bool shouldSendUpdate = HasChangedPositions() || isNpc;
+            if (IsClientSimulated() && shouldSendUpdate)
             {
                 SimplifiedTransform simplifiedTransform =
                     new SimplifiedTransform(gameObject.transform.position, Quaternion.Euler(gameObject.transform.eulerAngles));

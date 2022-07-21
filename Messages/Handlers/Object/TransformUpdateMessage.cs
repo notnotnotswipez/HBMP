@@ -39,12 +39,6 @@ namespace HBMP.Messages.Handlers
             SimplifiedTransform simpleTransform = SimplifiedTransform.FromBytes(transformBytes.ToArray());
 
             syncedObject.UpdateObject(simpleTransform);
-
-            if (Server.instance != null)
-            {
-                byte[] byteArray = WriteTypeToBeginning(NetworkMessageType.TransformUpdateMessage, packetByteBuf);
-                Server.instance.BroadcastMessageExcept((byte)NetworkChannel.Unreliable, byteArray, userId);
-            }
         }
     }
 

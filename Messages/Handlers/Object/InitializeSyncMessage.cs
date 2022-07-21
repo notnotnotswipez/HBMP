@@ -28,7 +28,7 @@ namespace HBMP.Messages.Handlers
             ushort objectId = packetByteBuf.ReadUShort();
             ushort groupId = packetByteBuf.ReadUShort();
             string objectName = packetByteBuf.ReadString();
-
+            
             MelonLogger.Msg("Received sync request for: "+objectName);
             
             if (!SyncedObject.syncedObjectIds.ContainsKey(objectId))
@@ -94,18 +94,6 @@ namespace HBMP.Messages.Handlers
             else
             {
                 MelonLogger.Error("Received request to sync object with id: "+objectId+", but that slot is already taken up!");
-            }
-
-            if (Server.instance != null)
-            {
-                List<byte> allBytes = new List<byte>();
-                allBytes.Add((byte)NetworkMessageType.InitializeSyncMessage);
-                foreach (byte b in packetByteBuf.getBytes()) {
-                    allBytes.Add(b);
-                }
-                byte[] byteArray = allBytes.ToArray();
-                
-                Server.instance.BroadcastMessageExcept((byte)NetworkChannel.Reliable, byteArray, userId);
             }
         }
     }

@@ -25,13 +25,11 @@ namespace HBMP.Messages.Handlers
             if (syncedObject)
             {
                 Explodeable explodeable = syncedObject.gameObject.GetComponentInChildren<Explodeable>();
+                if (!explodeable)
+                {
+                    explodeable = syncedObject.gameObject.GetComponentInParent<Explodeable>();
+                }
                 explodeable.Explode();
-            }
-            
-            if (Server.instance != null)
-            {
-                byte[] finalBytes = WriteTypeToBeginning(NetworkMessageType.ExplodeMessage, packetByteBuf);
-                Server.instance.BroadcastMessageExcept((byte)NetworkChannel.Object, finalBytes, userId);
             }
         }
     }

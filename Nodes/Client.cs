@@ -86,7 +86,7 @@ namespace HBMP.Nodes
             DiscordIntegration.RegisterUser(hostUser.Id, 0);
         }
 
-        public override void BroadcastMessage(byte channel, byte[] data) => SendMessage(hostUser.Id, channel, data);
+        public override void BroadcastMessage(byte channel, byte[] data) => BroadcastMessageP2P(channel, data);
         
         public override void UserConnectedEvent(long lobbyId, long userId) {
             DiscordIntegration.activity.Party.Size.CurrentSize = 1 + connectedUsers.Count;

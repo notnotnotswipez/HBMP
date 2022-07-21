@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using MelonLoader;
 using HBMP;
 // ...
-[assembly: MelonInfo(typeof(MainMod), "HBMP", "0.7.0", "notnotnotswipez")]
+[assembly: MelonInfo(typeof(MainMod), "HBMP", "1.1.5", "notnotnotswipez")]
 [assembly: MelonGame("GexagonVR", "Hard Bullet")]
 
 // General Information about an assembly is controlled through the following

@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
 using Discord;
+using HBMF;
 using HBMP.Messages;
 using HBMP.Messages.Handlers;
 using HBMP.Object;
+using HBMP.Representations;
 using MelonLoader;
+using UnityEngine.SceneManagement;
 
 namespace HBMP.Nodes
 {
@@ -22,16 +25,10 @@ namespace HBMP.Nodes
 
         public Server()
         {
-            if (DiscordIntegration.isConnected)
-            {
-                throw new Exception("Cannot start a server while connected to a lobby");
-            }
-
             MakeLobby();
         }
         
         public override void UserConnectedEvent(long lobbyId, long userId) {
-            MelonLogger.Msg("user connected to server!");
             DiscordIntegration.activity.Party.Size.CurrentSize = 1 + connectedUsers.Count;
             DiscordIntegration.activityManager.UpdateActivity(DiscordIntegration.activity, (res) => { });
 
@@ -60,13 +57,21 @@ namespace HBMP.Nodes
             };
             PacketByteBuf catchupBuff = MessageHandler.CompressMessage(NetworkMessageType.JoinCatchupMessage, joinCatchupData);
             SendMessage(userId, (byte)NetworkChannel.Reliable, catchupBuff.getBytes());
+            
+            PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.SceneTransferMessage, new SceneTransferData()
+            {
+                sceneIndex = SceneManager.GetActiveScene().buildIndex
+            });
+                
+            SendMessage(userId, (byte)NetworkChannel.Reliable, message.getBytes());
         }
 
         private void MakeLobby()
         {
             LobbyTransaction lobbyTransaction = DiscordIntegration.lobbyManager.GetLobbyCreateTransaction();
             lobbyTransaction.SetCapacity(10);
-            lobbyTransaction.SetOwner(DiscordIntegration.currentUser.Id);
+            lobbyTransaction.SetLocked(false);
+            lobbyTransaction.SetType(LobbyType.Private);
             DiscordIntegration.lobbyManager.CreateLobby(lobbyTransaction, onDiscordLobbyCreate);
         }
 
@@ -93,7 +98,7 @@ namespace HBMP.Nodes
             DiscordIntegration.UpdateActivity();
             
             ConnectToDiscordServer();
-            
+
             DiscordIntegration.lobbyManager.OnNetworkMessage += OnDiscordMessageRecieved;
             DiscordIntegration.lobbyManager.OnMemberConnect += OnDiscordUserJoined;
             DiscordIntegration.lobbyManager.OnMemberDisconnect += OnDiscordUserLeft;

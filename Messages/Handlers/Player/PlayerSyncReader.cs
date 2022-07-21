@@ -77,18 +77,6 @@ namespace HBMP.Messages.Handlers
                     MessageHandler.CompressMessage(NetworkMessageType.RequestIdsMessage, requestIdsMessageData);
                 Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, shortBuf.getBytes());
             }
-
-            if (Server.instance != null)
-            {
-                List<byte> allBytes = new List<byte>();
-                allBytes.Add((byte)NetworkMessageType.PlayerUpdateMessage);
-                foreach (byte b in packetByteBuf.getBytes()) {
-                    allBytes.Add(b);
-                }
-                byte[] byteArray = allBytes.ToArray();
- 
-                Server.instance.BroadcastMessageExcept((byte)NetworkChannel.Unreliable, byteArray, userId);
-            }
         }
     }
 
