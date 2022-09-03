@@ -19,6 +19,7 @@ namespace HBMP.Messages
         JoinCatchupMessage = 9,
         EnemySpawnMessage = 10,
         EnemyDestroyMessage = 11,
-        SceneTransferMessage = 12
+        SceneTransferMessage = 12,
+        IkUpdateMessage = 13
     }
 } 

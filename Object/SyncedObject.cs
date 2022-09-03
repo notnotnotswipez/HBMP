@@ -17,6 +17,8 @@ namespace HBMP.Object
 {
     public class SyncedObject : MonoBehaviour
     {
+        public static List<GameObject> tempActiveObjects = new List<GameObject>();
+        
         public static Dictionary<ushort, SyncedObject> syncedObjectIds = new Dictionary<ushort, SyncedObject>();
         public static Dictionary<EnemyRoot, long> returnedEnemyRoots = new Dictionary<EnemyRoot, long>();
         public static List<EnemyRoot> spawnedEnemies = new List<EnemyRoot>();
@@ -411,6 +413,22 @@ namespace HBMP.Object
                 if (!Node.activeNode.connectedUsers.Contains(simulatorId))
                 {
                     SetOwner(DiscordIntegration.lobby.OwnerId);
+                }
+            }
+        }
+
+        public static void CloneAllWeapons()
+        {
+            GameObject weaponsPage = GameObject.Find("WeaponsStand");
+            if (weaponsPage != null)
+            {
+                GameObject remadeWeapons = GameObject.Instantiate(weaponsPage);
+                remadeWeapons.transform.position = weaponsPage.transform.position - new Vector3(0, 30, 0);
+                
+                for (int i = 0; i < remadeWeapons.transform.childCount; i++)
+                {
+                    GameObject child = remadeWeapons.transform.GetChild(i).gameObject;
+                    child.SetActive(true);
                 }
             }
         }

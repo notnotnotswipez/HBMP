@@ -4,6 +4,7 @@ using System.Reflection;
 using HBMP.Nodes;
 using HBMP.Object;
 using HBMP.Patches;
+using HBMP.Utils;
 using MelonLoader;
 using NodeCanvas.Framework;
 using UnityEngine;
@@ -41,28 +42,26 @@ namespace HBMP.Messages.Handlers
                                   " requested: " + lastObjectId + ", try reloading the scene?");
                 return;
             }
+            
+            EnemyRoot enemyPrefab = null;
 
-            Type spawnerType = typeof(InfinityWaveSpawner);
-            InfinityWaveSpawner infinityWaveSpawner =
-                Resources.FindObjectsOfTypeAll<InfinityWaveSpawner>().FirstOrDefault();
-
-            GameObject enemyPrefab = null;
-
-            if (infinityWaveSpawner != null)
+            foreach (InfinityWaveSpawner checkedSpawner in Resources.FindObjectsOfTypeAll<InfinityWaveSpawner>())
             {
-                FieldInfo fieldInfo =
-                    spawnerType.GetField("_enemyPrefab", BindingFlags.NonPublic | BindingFlags.Instance);
-                enemyPrefab = ((EnemyRoot)fieldInfo.GetValue(infinityWaveSpawner)).gameObject;
-            }
-            else
-            {
-                MelonLogger.Error("No infinity wave spawner on the map, no prefab to take.");
-                return;
+                if (!checkedSpawner.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+
+                enemyPrefab = ReflectionHelper.GetPrivateField<EnemyRoot>(checkedSpawner, "_enemyPrefab");
+                if (enemyPrefab != null)
+                {
+                    break;
+                }
             }
             
             if (enemyPrefab != null)
             {
-                GameObject spawnedNPC = GameObject.Instantiate(enemyPrefab);
+                GameObject spawnedNPC = GameObject.Instantiate(enemyPrefab.gameObject);
                 spawnedNPC.GetComponent<EnemyRoot>().HealthContainer.IgnoreDamage = false;
                 spawnedNPC.GetComponentInChildren<Blackboard>().SetVariableValue("Target", HBMF.r.player.transform);
 

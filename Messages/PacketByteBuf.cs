@@ -33,7 +33,11 @@ namespace HBMP.Messages
         
         public SimplifiedTransform ReadSimpleTransform()
         {
-            SimplifiedTransform simpleTransform = SimplifiedTransform.FromBytes(byteList.GetRange(byteIndex, SimplifiedTransform.size).ToArray());
+            List<byte> transformBytes = new List<byte>();
+            for (int i = byteIndex; i < byteIndex+SimplifiedTransform.size; i++) {
+                transformBytes.Add(getBytes()[i]);
+            }
+            SimplifiedTransform simpleTransform = SimplifiedTransform.FromBytes(transformBytes.ToArray());
             byteIndex += SimplifiedTransform.size;
 
             return simpleTransform;
@@ -58,6 +62,13 @@ namespace HBMP.Messages
         {
             long longNum = BitConverter.ToInt64(getBytes(), byteIndex);
             byteIndex += sizeof(long);
+            return longNum;
+        }
+        
+        public int ReadInt()
+        {
+            int longNum = BitConverter.ToInt32(getBytes(), byteIndex);
+            byteIndex += sizeof(int);
             return longNum;
         }
 

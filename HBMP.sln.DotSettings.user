@@ -248,4 +248,12 @@
 	<s:Boolean x:Key="/Default/AddReferences/RecentPaths/=D_003A_005CVisualStudioProjects_005CHBMP_005Cbin_005CDebug_005CUnityEngine_002EXRModule_002Edll/@EntryIndexedValue">True</s:Boolean>
 	<s:String x:Key="/Default/Environment/AssemblyExplorer/XmlDocument/@EntryValue">&lt;AssemblyExplorer&gt;&#xD;
   &lt;Assembly Path="D:\VisualStudioProjects\HBMP\bin\Debug\Assembly-CSharp.dll" /&gt;&#xD;
-&lt;/AssemblyExplorer&gt;</s:String></wpf:ResourceDictionary>
+&lt;/AssemblyExplorer&gt;</s:String>
+	
+	
+	
+	
+	
+	
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/Initialized/@EntryValue">True</s:Boolean>
+	<s:Boolean x:Key="/Default/ResxEditorPersonal/ShowOnlyErrors/@EntryValue">True</s:Boolean></wpf:ResourceDictionary>

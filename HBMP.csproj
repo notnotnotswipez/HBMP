@@ -38,10 +38,10 @@
       <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Hard Bullet_Data\Managed\Accessibility.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp">
-      <HintPath>bin\Debug\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Hard Bullet_Data\Managed\Assembly-CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>bin\Debug\Assembly-CSharp-firstpass.dll</HintPath>
+      <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Hard Bullet_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
     </Reference>
     <Reference Include="Beautify.Universal.Runtime">
       <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Hard Bullet_Data\Managed\Beautify.Universal.Runtime.dll</HintPath>
@@ -492,6 +492,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Blacklist.cs" />
     <Compile Include="MainMod.cs" />
     <Compile Include="DataType\SimplifiedQuaternion.cs" />
     <Compile Include="DataType\SimplifiedTransform.cs" />
@@ -512,6 +513,7 @@
     <Compile Include="Messages\Handlers\Object\OwnerChangeMessage.cs" />
     <Compile Include="Messages\Handlers\Object\TransformUpdateMessage.cs" />
     <Compile Include="Messages\Handlers\Player\DisconnectMessage.cs" />
+    <Compile Include="Messages\Handlers\Player\IkSyncMessage.cs" />
     <Compile Include="Messages\Handlers\Player\JoinCatchupMessage.cs" />
     <Compile Include="Messages\Handlers\Player\PlayerSyncReader.cs" />
     <Compile Include="Messages\Handlers\Player\RequestIdsMessage.cs" />
@@ -534,8 +536,14 @@
     <Compile Include="Patches\WaitForEnemyDead.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Representations\PlayerRepresentation.cs" />
-    <Compile Include="Utils\PlayerUtils.cs" />
-  </ItemGroup>
+    <Compile Include="Utils\DataDirectory.cs" />
+    <Compile Include="Utils\DllTools.cs" />
+    <Compile Include="Utils\EmbeddedAssetBundle.cs" />
+    <Compile Include="Utils\GameSDK.cs" />
+    <Compile Include="Utils\ReflectionHelper.cs" />
+	<EmbeddedResource Include="Resources\player.hbmp" />
+	<EmbeddedResource Include="Resources\discord_game_sdk.dll" />
+</ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>d:

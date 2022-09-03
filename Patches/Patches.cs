@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Linq;
+using FirearmSystem;
 using HarmonyLib;
 using HBMP.Messages;
 using HBMP.Messages.Handlers;
@@ -19,8 +20,6 @@ namespace HBMP.Patches
 
         public static IEnumerator WaitForGunshot(GameObject gameObject)
         {
-            yield return new WaitForFixedUpdate();
-            
             SyncedObject syncedObject = gameObject.GetComponentInParent<SyncedObject>();
             if (syncedObject)
             {
@@ -32,17 +31,15 @@ namespace HBMP.Patches
 
                 PacketByteBuf packetByteBuf =
                     MessageHandler.CompressMessage(NetworkMessageType.GunshotMessage, gunshotMessageData);
-                    
+
                 Node.activeNode.BroadcastMessage((byte)NetworkChannel.Attack, packetByteBuf.getBytes());
             }
-            
+
             yield break;
         }
+
         public static IEnumerator WaitForProperUnGrab(GameObject gameObject)
         {
-            yield return new WaitForFixedUpdate();
-            yield return new WaitForFixedUpdate();
-            
             SyncedObject syncedObject = gameObject.GetComponent<SyncedObject>();
             if (syncedObject != null)
             {
@@ -52,20 +49,18 @@ namespace HBMP.Patches
                     if (SyncedObject.returnedEnemyRoots.ContainsKey(enemyRoot))
                     {
                         long ownerId = SyncedObject.returnedEnemyRoots[enemyRoot];
-                        object coroutineTask = MelonCoroutines.Start(PatchCoroutines.WaitForEnemyReSync(syncedObject, ownerId));
+                        object coroutineTask =
+                            MelonCoroutines.Start(PatchCoroutines.WaitForEnemyReSync(syncedObject, ownerId));
                         PatchVariables.deletionCourotine.Add(enemyRoot, coroutineTask);
                     }
                 }
             }
-            
+
             yield break;
         }
 
         public static IEnumerator WaitForProperGrab(GameObject gameObject)
         {
-            yield return new WaitForFixedUpdate();
-            yield return new WaitForFixedUpdate();
-            
             SyncedObject syncedObject = gameObject.GetComponent<SyncedObject>();
             if (syncedObject == null)
             {
@@ -75,17 +70,20 @@ namespace HBMP.Patches
             {
                 syncedObject.BroadcastOwnerChange();
             }
-                    
-            EnemyRoot enemyRoot = SyncedObject.FindEnemyRoot(syncedObject.gameObject);
-            if (enemyRoot)
+
+            if (syncedObject)
             {
-                if (PatchVariables.deletionCourotine.ContainsKey(enemyRoot))
+                EnemyRoot enemyRoot = SyncedObject.FindEnemyRoot(syncedObject.gameObject);
+                if (enemyRoot)
                 {
-                    MelonCoroutines.Stop(PatchVariables.deletionCourotine[enemyRoot]);
-                    PatchVariables.deletionCourotine.Remove(enemyRoot);
+                    if (PatchVariables.deletionCourotine.ContainsKey(enemyRoot))
+                    {
+                        MelonCoroutines.Stop(PatchVariables.deletionCourotine[enemyRoot]);
+                        PatchVariables.deletionCourotine.Remove(enemyRoot);
+                    }
                 }
             }
-            
+
             yield break;
         }
 
@@ -115,6 +113,7 @@ namespace HBMP.Patches
             {
                 container = enemy.GetComponentInParent<HealthContainer>();
             }
+
             EnemyRoot enemyRoot = container.GetComponentInParent<EnemyRoot>();
             SyncedObject.SyncNPC(enemyRoot, true);
             yield break;
@@ -136,7 +135,7 @@ namespace HBMP.Patches
             for (int i = 0; i < groupIds.Count; i++)
             {
                 ushort groupId = groupIds[i];
-                
+
                 EnemyDestroyMessageData enemyDestroyMessageData = new EnemyDestroyMessageData()
                 {
                     userId = DiscordIntegration.currentUser.Id,
@@ -157,7 +156,8 @@ namespace HBMP.Patches
         public static bool shouldIgnoreFire = false;
     }
 
-    [HarmonyPatch(typeof(EntitySpawner), "InitializeEntity", new Type[] {typeof(GameObject), typeof(EntitySpawnProperties)})]
+    [HarmonyPatch(typeof(EntitySpawner), "InitializeEntity",
+        new Type[] { typeof(GameObject), typeof(EntitySpawnProperties) })]
     class EntitySpawnerPatch
     {
         public static void Postfix(EntitySpawner __instance, GameObject entity, EntitySpawnProperties properties,
@@ -175,7 +175,7 @@ namespace HBMP.Patches
         }
     }
 
-    [HarmonyPatch(typeof(SceneLoader), "ReloadCurentScene")]
+    [HarmonyPatch(typeof(SceneLoader), nameof(SceneLoader.ReloadCurrentScene))]
     class ReloadScenePatch
     {
         public static bool Prefix(SceneLoader __instance)
@@ -184,11 +184,13 @@ namespace HBMP.Patches
             {
                 if (!DiscordIntegration.isHost)
                 {
-                    CameraFader cameraFader = Resources.FindObjectsOfTypeAll<CameraFader>().FirstOrDefault();
+                    CameraFader cameraFader =
+                        UnityEngine.Resources.FindObjectsOfTypeAll<CameraFader>().FirstOrDefault();
                     cameraFader.FadeOut(1);
                     return false;
                 }
             }
+
             return true;
         }
     }
@@ -224,6 +226,7 @@ namespace HBMP.Patches
                     {
                         continue;
                     }
+
                     SyncedObject syncedObject = enemyRoot.gameObject.GetComponent<SyncedObject>();
                     groupIds.Add(syncedObject.groupId);
                 }
@@ -237,7 +240,8 @@ namespace HBMP.Patches
         new Type[] { typeof(EnemyData) })]
     class EnemySpawnPatch
     {
-        public static void Postfix(EnemySpawnerFromGenerator __instance, EnemyData enemyData, ref List<GameObject> ___spawnedObjects)
+        public static void Postfix(EnemySpawnerFromGenerator __instance, EnemyData enemyData,
+            ref List<GameObject> ___spawnedObjects)
         {
             if (DiscordIntegration.hasLobby)
             {
@@ -265,7 +269,8 @@ namespace HBMP.Patches
                         };
 
                         PacketByteBuf packetByteBuf =
-                            MessageHandler.CompressMessage(NetworkMessageType.EnemyDestroyMessage, enemyDestroyMessageData);
+                            MessageHandler.CompressMessage(NetworkMessageType.EnemyDestroyMessage,
+                                enemyDestroyMessageData);
 
                         Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
                     }
@@ -274,73 +279,77 @@ namespace HBMP.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Grabbable), "AttemptGrab", new Type[] { typeof(Grabber), 
-            typeof(TestGrab.GrabPoint), typeof(ConfigurableJoint), typeof(GrabType)})]
-        class GrabPatch
+    [HarmonyPatch(typeof(Grabbable), "AttemptGrab", new Type[]
+    {
+        typeof(Grabber),
+        typeof(TestGrab.GrabPoint), typeof(ConfigurableJoint), typeof(GrabType)
+    })]
+    class GrabPatch
+    {
+        public static void Postfix(Grabbable __instance, Grabber grabber, TestGrab.GrabPoint grabPoint,
+            ConfigurableJoint configurableJoint, GrabType grabType)
         {
-            public static void Postfix(Grabbable __instance, Grabber grabber, TestGrab.GrabPoint grabPoint, ConfigurableJoint configurableJoint, GrabType grabType)
+            if (DiscordIntegration.hasLobby)
             {
-                if (DiscordIntegration.hasLobby)
-                {
-                    MelonCoroutines.Start(PatchCoroutines.WaitForProperGrab(__instance.gameObject));
-                }
+                MelonCoroutines.Start(PatchCoroutines.WaitForProperGrab(__instance.gameObject));
             }
         }
-        
-        [HarmonyPatch(typeof(Grabbable), "AttemptUngrab", new Type[] { typeof(Grabber)})]
-        class UnGrabPatch
-        {
-            public static void Postfix(Grabbable __instance, Grabber grabber)
-            {
-                if (DiscordIntegration.hasLobby)
-                {
-                    MelonCoroutines.Start(PatchCoroutines.WaitForProperUnGrab(__instance.gameObject));
-                }
-            }
-        }
-        
-        [HarmonyPatch(typeof(Chamber), "FireProjectile")]
-        class GunPatch
-        {
-            public static void Postfix(Chamber __instance)
-            {
-                if (DiscordIntegration.hasLobby)
-                {
-                    if (!PatchVariables.shouldIgnoreFire)
-                    {
-                        MelonCoroutines.Start(PatchCoroutines.WaitForGunshot(__instance.gameObject));
-                    }
-                }
-            }
-        }
-        
-        [HarmonyPatch(typeof(Explodeable), "Explode")]
-        class ExplosivesPatch
-        {
-            public static void Prefix(Explodeable __instance)
-            {
-                if (DiscordIntegration.hasLobby)
-                {
-                    SyncedObject syncedObject = __instance.gameObject.GetComponentInParent<SyncedObject>();
-                    if (syncedObject)
-                    {
-                        if (!syncedObject.IsClientSimulated())
-                        {
-                            return;
-                        }
+    }
 
-                        ExplodeMessageData explodeMessageData = new ExplodeMessageData()
-                        {
-                            userId = DiscordIntegration.currentUser.Id,
-                            objectId = syncedObject.currentId
-                        };
+    [HarmonyPatch(typeof(Grabbable), "AttemptUngrab", new Type[] { typeof(Grabber) })]
+    class UnGrabPatch
+    {
+        public static void Postfix(Grabbable __instance, Grabber grabber)
+        {
+            if (DiscordIntegration.hasLobby)
+            {
+                MelonCoroutines.Start(PatchCoroutines.WaitForProperUnGrab(__instance.gameObject));
+            }
+        }
+    }
 
-                        PacketByteBuf packetByteBuf =
-                            MessageHandler.CompressMessage(NetworkMessageType.ExplodeMessage, explodeMessageData);
-                    
-                        Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
-                    }
+    [HarmonyPatch(typeof(Chamber), "FireProjectile")]
+    class GunPatch
+    {
+        public static void Postfix(Chamber __instance)
+        {
+            if (DiscordIntegration.hasLobby)
+            {
+                if (!PatchVariables.shouldIgnoreFire)
+                {
+                    MelonCoroutines.Start(PatchCoroutines.WaitForGunshot(__instance.gameObject));
                 }
             }
         }
+    }
+
+    [HarmonyPatch(typeof(Explodeable), "Explode")]
+    class ExplosivesPatch
+    {
+        public static void Prefix(Explodeable __instance)
+        {
+            if (DiscordIntegration.hasLobby)
+            {
+                SyncedObject syncedObject = __instance.gameObject.GetComponentInParent<SyncedObject>();
+                if (syncedObject)
+                {
+                    if (!syncedObject.IsClientSimulated())
+                    {
+                        return;
+                    }
+
+                    ExplodeMessageData explodeMessageData = new ExplodeMessageData()
+                    {
+                        userId = DiscordIntegration.currentUser.Id,
+                        objectId = syncedObject.currentId
+                    };
+
+                    PacketByteBuf packetByteBuf =
+                        MessageHandler.CompressMessage(NetworkMessageType.ExplodeMessage, explodeMessageData);
+
+                    Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+                }
+            }
+        }
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using BulletMenuVR;
 using FirearmSystem;
 using HarmonyLib;
@@ -21,15 +22,17 @@ namespace HBMP
 {
     public class MainMod : MelonMod
     {
-        public static GameObject npcPrefab;
-        public static Vector3 tpPos;
-
         private PlayerRepresentation debugRepresentation;
+
+        public static Dictionary<byte, GameObject> boneDictionary = new Dictionary<byte, GameObject>();
+        private byte currentBoneIndex = 0;
         public override void OnApplicationStart()
         {
+            GameSDK.LoadGameSDK();
             MessageHandler.RegisterHandlers();
             DiscordIntegration.Init();
             Client.StartClient();
+            DataDirectory.Initialize();
             VrMenuPageBuilder builder = VrMenuPageBuilder.Builder();
 
             builder.AddButton(new VrMenuButton("Start Server", () =>
@@ -61,8 +64,13 @@ namespace HBMP
         }
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
+            currentBoneIndex = 0;
+            boneDictionary.Clear();
+            boneDictionary.Add(currentBoneIndex++, GameObject.Find("[HARD BULLET PLAYER]/HexaBody/PlayerModel/PlayerModel/root"));
+            populateBoneDictionary(GameObject.Find("[HARD BULLET PLAYER]/HexaBody/PlayerModel/PlayerModel/root").transform);
             Mod.Start();
             SyncedObject.CleanData();
+            SyncedObject.CloneAllWeapons();
             
             if (Server.instance != null)
             {
@@ -103,11 +111,48 @@ namespace HBMP
                 {
                     debugRepresentation.UpdateTransforms(simplifiedTransformsArray);
                 }
+                
+                sendBones();
 
                 PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.PlayerUpdateMessage, new PlayerSyncMessageData()
                 {
                     userId =  DiscordIntegration.currentUser.Id,
                     simplifiedTransforms = simplifiedTransformsArray
+                });
+                
+                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Unreliable, message.getBytes());
+            }
+        }
+        
+        private void populateBoneDictionary(Transform parent)
+        {
+            int childCount = parent.childCount;
+
+            for (int i = 0; i < childCount; i++)
+            {
+                GameObject child = parent.GetChild(i).gameObject;
+                boneDictionary.Add(currentBoneIndex++, child);
+
+                if (child.transform.childCount > 0 && !Blacklist.isBlockedBone(child))
+                {
+                    populateBoneDictionary(child.transform);
+                }
+            }
+        }
+
+        private void sendBones()
+        {
+            foreach (byte boneId in boneDictionary.Keys)
+            {
+                GameObject bone = boneDictionary[boneId];
+                SimplifiedTransform simplifiedTransform = new SimplifiedTransform(bone.transform.position,
+                    Quaternion.Euler(bone.transform.eulerAngles));
+                
+                PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.IkUpdateMessage, new IkSyncMessageData()
+                {
+                    userId =  DiscordIntegration.currentUser.Id,
+                    boneIndex = boneId,
+                    simplifiedTransform = simplifiedTransform
                 });
                 
                 Node.activeNode.BroadcastMessage((byte)NetworkChannel.Unreliable, message.getBytes());
@@ -130,12 +175,10 @@ namespace HBMP
                     }
                 }
             }
-
             base.OnApplicationQuit();
         }
 
         public override void OnLateUpdate() {
-            // This will update and flush discords callbacks
             DiscordIntegration.Tick();
         }
 
@@ -148,16 +191,6 @@ namespace HBMP
                     Server.StartServer();
                 }
             }
-
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                tpPos = GameObject.Find("[HARD BULLET PLAYER]/HexaBody/Pelvis/CameraRig/FloorOffset/Scaler/Camera").transform.position;
-            }
-
-            if (Input.GetKeyDown(KeyCode.L))
-            {
-                PlayerUtils.TeleportPlayer(tpPos);
-            }
         }
     }
 
@@ -166,11 +199,11 @@ namespace HBMP
         private static string id;
         public static GameObject player;
 
-        public static String[] versionString = new[] { "1", "1", "5" };
+        public static String[] versionString = new[] { "1", "4", "0" };
 
         public static void Start()
         {
-            AssetBundle localAssetBundle = AssetBundle.LoadFromFile(MelonUtils.UserDataDirectory+"/HBMP/player.hbmp");
+            AssetBundle localAssetBundle = AssetBundle.LoadFromMemory(EmbeddedAssetBundle.LoadFromAssembly(System.Reflection.Assembly.GetExecutingAssembly(), "HBMP.Resources.player.hbmp"));
             player = localAssetBundle.LoadAsset<GameObject>("1_Player.prefab");
             localAssetBundle.Unload(false);
         }

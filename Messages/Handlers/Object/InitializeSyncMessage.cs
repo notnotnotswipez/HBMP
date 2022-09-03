@@ -18,7 +18,7 @@ namespace HBMP.Messages.Handlers
             packetByteBuf.WriteUShort(initializeSyncData.groupId);
             packetByteBuf.WriteString(initializeSyncData.objectName);
             packetByteBuf.create();
-
+         
             return packetByteBuf;
         }
 
@@ -46,6 +46,8 @@ namespace HBMP.Messages.Handlers
                         MelonLogger.Error("Couldnt find "+objectName+" or any instanciable objects in the scene. Sorry! Probably a magazine");
                         return;
                     }
+                    
+                    potentialPrefab.SetActive(true);
 
                     // Check for socket
                     Socket socket = potentialPrefab.GetComponentInParent<Socket>();
@@ -72,6 +74,8 @@ namespace HBMP.Messages.Handlers
                         MelonLogger.Error("Couldnt find "+objectName+" or any instanciable objects in the scene. Sorry! Probably a magazine");
                         return;
                     }
+                    
+                    potentialPrefab.SetActive(true);
                     
                     // Check for socket
                     Socket socket = potentialPrefab.GetComponentInParent<Socket>();

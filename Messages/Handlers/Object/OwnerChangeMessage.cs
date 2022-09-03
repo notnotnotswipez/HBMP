@@ -1,6 +1,8 @@
 using HBMP.Nodes;
 using HBMP.Object;
+using InteractionSystem;
 using MelonLoader;
+using UnityEngine;
 
 namespace HBMP.Messages.Handlers
 {
@@ -28,7 +30,18 @@ namespace HBMP.Messages.Handlers
             {
                 return;
             }
-            
+
+            foreach (Grabber hand in GameObject.Find("[HARD BULLET PLAYER]").GetComponentsInChildren<Grabber>())
+            {
+                if (hand.HasGrabbedObject)
+                {
+                    if (hand.CurentGrab.Grabbable.gameObject.Equals(syncedObject.gameObject))
+                    {
+                        hand.Ungrab();
+                    }
+                }
+            }
+
             syncedObject.SetOwner(userId);
 
             if (SyncedObject.relatedSyncedObjects.ContainsKey(syncedObject.groupId))

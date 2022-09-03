@@ -25,6 +25,7 @@ namespace HBMP.Messages
             MessageReaders.Add(NetworkMessageType.EnemySpawnMessage, new EnemySpawnMessage());
             MessageReaders.Add(NetworkMessageType.EnemyDestroyMessage, new EnemyDestroyMessage());
             MessageReaders.Add(NetworkMessageType.SceneTransferMessage, new SceneTransferMessage());
+            MessageReaders.Add(NetworkMessageType.IkUpdateMessage, new IkSyncMessage());
         }
 
         public static void ReadMessage(NetworkMessageType messageType, PacketByteBuf packetByteBuf, long sender)
