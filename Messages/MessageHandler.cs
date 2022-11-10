@@ -26,11 +26,13 @@ namespace HBMP.Messages
             MessageReaders.Add(NetworkMessageType.EnemyDestroyMessage, new EnemyDestroyMessage());
             MessageReaders.Add(NetworkMessageType.SceneTransferMessage, new SceneTransferMessage());
             MessageReaders.Add(NetworkMessageType.IkUpdateMessage, new IkSyncMessage());
+            MessageReaders.Add(NetworkMessageType.ModMessage, new ModMessage());
         }
 
         public static void ReadMessage(NetworkMessageType messageType, PacketByteBuf packetByteBuf, long sender)
         {
-            MessageReaders[messageType].ReadData(packetByteBuf, sender);
+            MessageReader reader = MessageReaders[messageType];
+            reader.ReadData(packetByteBuf, sender);
         }
         
         public static PacketByteBuf CompressMessage(NetworkMessageType messageType, MessageData messageData)
@@ -38,6 +40,19 @@ namespace HBMP.Messages
             PacketByteBuf packetByteBuf = MessageReaders[messageType].CompressData(messageData);
             List<byte> taggedBytes = new List<byte>();
             taggedBytes.Add((byte) messageType);
+            foreach (byte b in packetByteBuf.getBytes()) {
+                taggedBytes.Add(b);
+            }
+            byte[] finalArray = taggedBytes.ToArray();
+            return new PacketByteBuf(finalArray);
+        }
+        
+        public static PacketByteBuf CompressMessage(ushort extensionId, MessageData messageData)
+        {
+            ModMessage modMessage = (ModMessage)MessageReaders[NetworkMessageType.ModMessage];
+            PacketByteBuf packetByteBuf = modMessage.CompressData(messageData, extensionId);
+            List<byte> taggedBytes = new List<byte>();
+            taggedBytes.Add((byte) NetworkMessageType.ModMessage);
             foreach (byte b in packetByteBuf.getBytes()) {
                 taggedBytes.Add(b);
             }

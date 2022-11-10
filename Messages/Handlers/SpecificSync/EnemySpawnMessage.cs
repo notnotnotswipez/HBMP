@@ -63,7 +63,7 @@ namespace HBMP.Messages.Handlers
             {
                 GameObject spawnedNPC = GameObject.Instantiate(enemyPrefab.gameObject);
                 spawnedNPC.GetComponent<EnemyRoot>().HealthContainer.IgnoreDamage = false;
-                spawnedNPC.GetComponentInChildren<Blackboard>().SetVariableValue("Target", HBMF.r.player.transform);
+                spawnedNPC.GetComponentInChildren<Blackboard>().SetVariableValue("Target", PlayerUtils.GetRandomPlayerHead());
 
                 foreach (InventoryPocket enemyPocket in spawnedNPC.GetComponentsInChildren<InventoryPocket>())
                 {

@@ -509,6 +509,8 @@
     <Compile Include="Extensions\TransformExtensions.cs" />
     <Compile Include="Extensions\Vector3Extensions.cs" />
     <Compile Include="Messages\DebugAssistance.cs" />
+    <Compile Include="Messages\Handlers\ModExtensionMessage.cs" />
+    <Compile Include="Messages\Handlers\ModMessage.cs" />
     <Compile Include="Messages\Handlers\Object\InitializeSyncMessage.cs" />
     <Compile Include="Messages\Handlers\Object\OwnerChangeMessage.cs" />
     <Compile Include="Messages\Handlers\Object\TransformUpdateMessage.cs" />
@@ -525,6 +527,7 @@
     <Compile Include="Messages\Handlers\SpecificSync\GunshotMessage.cs" />
     <Compile Include="Messages\MessageHandler.cs" />
     <Compile Include="Messages\MessageReader.cs" />
+    <Compile Include="Messages\ModMessageHandler.cs" />
     <Compile Include="Messages\NetworkChannel.cs" />
     <Compile Include="Messages\NetworkMessageTypes.cs" />
     <Compile Include="Messages\PacketByteBuf.cs" />
@@ -533,13 +536,14 @@
     <Compile Include="Nodes\Server.cs" />
     <Compile Include="Object\SyncedObject.cs" />
     <Compile Include="Patches\Patches.cs" />
-    <Compile Include="Patches\WaitForEnemyDead.cs" />
+    <Compile Include="Patches\WaitForNotMoving.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Representations\PlayerRepresentation.cs" />
     <Compile Include="Utils\DataDirectory.cs" />
     <Compile Include="Utils\DllTools.cs" />
     <Compile Include="Utils\EmbeddedAssetBundle.cs" />
     <Compile Include="Utils\GameSDK.cs" />
+    <Compile Include="Utils\PlayerUtils.cs" />
     <Compile Include="Utils\ReflectionHelper.cs" />
 	<EmbeddedResource Include="Resources\player.hbmp" />
 	<EmbeddedResource Include="Resources\discord_game_sdk.dll" />

@@ -22,9 +22,9 @@ namespace HBMP.Representations
 
         private byte currentBoneId = 0;
 
-        private Transform head;
-        private Transform handR;
-        private Transform handL;
+        public Transform head;
+        public Transform handR;
+        public Transform handL;
 
         public PlayerRepresentation(User user)
         {
@@ -159,9 +159,9 @@ namespace HBMP.Representations
 
         public void DeleteRepresentation()
         {
-            representations.Remove(user.Id);
-            GameObject.Destroy(playerRep);
             GameObject.Destroy(ikBody);
+            GameObject.Destroy(playerRep);
+            representations.Remove(user.Id);
         }
     }
 }

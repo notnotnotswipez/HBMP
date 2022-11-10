@@ -1,12 +1,15 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using FirearmSystem;
 using HBMP.DataType;
 using HBMP.Messages;
 using HBMP.Messages.Handlers;
 using HBMP.Nodes;
+using HBMP.Utils;
 using MelonLoader;
 using NodeCanvas.StateMachines;
 using RootMotion.Dynamics;
@@ -26,6 +29,8 @@ namespace HBMP.Object
         public static Dictionary<ushort, List<SyncedObject>> relatedSyncedObjects =
             new Dictionary<ushort, List<SyncedObject>>();
 
+        public static List<EnemyRoot> enemyTrackTransfer = new List<EnemyRoot>(); 
+
         public static List<HealthContainer> deadContainers = new List<HealthContainer>();
 
         public Vector3 lastPosition;
@@ -41,7 +46,30 @@ namespace HBMP.Object
         {
             if (isNPC(gameObject))
             {
+                EnemyRoot enemyRoot = FindEnemyRoot(gameObject);
+                if (!enemyTrackTransfer.Contains(enemyRoot))
+                {
+                    enemyTrackTransfer.Add(enemyRoot);
+                    MelonCoroutines.Start(RandomizeEnemyTarget(enemyRoot));
+                }
                 isNpc = true;
+            }
+        }
+
+        private static IEnumerator RandomizeEnemyTarget(EnemyRoot root)
+        {
+            yield return new WaitForSecondsRealtime(15f);
+            if (root.gameObject != null)
+            {
+                SyncedObject syncedObject = root.gameObject.GetComponent<SyncedObject>();
+                if (syncedObject != null)
+                {
+                    if (syncedObject.IsClientSimulated())
+                    {
+                        root.Blackboard.SetVariableValue("Target", PlayerUtils.GetRandomPlayerHead());
+                    }
+                }
+                MelonCoroutines.Start(RandomizeEnemyTarget(root));
             }
         }
 
@@ -119,18 +147,22 @@ namespace HBMP.Object
             returnedEnemyRoots.Clear();
             deadContainers.Clear();
             spawnedEnemies.Clear();
+            enemyTrackTransfer.Clear();
         }
 
-        public static void MakeSyncedObject(GameObject gameObject, ushort objectId, long ownerId, ushort groupId)
+        public static void MakeSyncedObject(GameObject gameObject, ushort objectId, long ownerId, ushort groupId, bool properAdd = true)
         {
             SyncedObject syncedObject = gameObject.AddComponent<SyncedObject>();
             // If the group ID coming in is greater than or equal to the one stored clientside, then we should set it.
-            if (lastGroupId <= groupId)
+            if (properAdd)
             {
-                lastGroupId = groupId;
-                lastGroupId++;
+                if (lastGroupId <= groupId)
+                {
+                    lastGroupId = groupId;
+                    lastGroupId++;
+                }
             }
-            
+
             if (relatedSyncedObjects.ContainsKey(groupId))
             {
                 List<SyncedObject> otherSynced = relatedSyncedObjects[groupId];

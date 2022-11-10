@@ -20,6 +20,7 @@ namespace HBMP.Messages
         EnemySpawnMessage = 10,
         EnemyDestroyMessage = 11,
         SceneTransferMessage = 12,
-        IkUpdateMessage = 13
+        IkUpdateMessage = 13,
+        ModMessage = 14
     }
 } 

@@ -9,6 +9,7 @@ using HBMP.Messages;
 using HBMP.Messages.Handlers;
 using HBMP.Nodes;
 using HBMP.Object;
+using HBMP.Utils;
 using InteractionSystem;
 using MelonLoader;
 using UnityEngine;
@@ -89,7 +90,7 @@ namespace HBMP.Patches
 
         public static IEnumerator WaitForEnemyReSync(SyncedObject syncedObject, long userId)
         {
-            yield return new WaitForEnemyDead(SyncedObject.FindEnemyRoot(syncedObject.gameObject).HealthContainer);
+            yield return new WaitForNotMoving(syncedObject);
             yield return new WaitForSecondsRealtime(2f);
             syncedObject.ManualSetOwner(userId, true);
             PatchVariables.deletionCourotine.Remove(SyncedObject.FindEnemyRoot(syncedObject.gameObject));
@@ -102,6 +103,7 @@ namespace HBMP.Patches
             HealthContainer container = enemies[enemies.Count - 1];
             EnemyRoot enemyRoot = container.GetComponentInParent<EnemyRoot>();
             SyncedObject.SyncNPC(enemyRoot, true);
+            enemyRoot.Blackboard.SetVariableValue("Target", PlayerUtils.GetRandomPlayerHead());
             yield break;
         }
 

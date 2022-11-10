@@ -26,6 +26,13 @@ namespace HBMP.Messages
             return bytes;
         }
 
+        public void WriteBytes(byte[] bytesToAdd)
+        {
+            foreach (byte b in bytesToAdd) {
+                byteList.Add(b);
+            }
+        }
+
         public byte ReadByte()
         {
             return getBytes()[byteIndex++];
