@@ -1,4 +1,5 @@
 using HBMP.Nodes;
+using Steamworks;
 
 namespace HBMP.Messages.Handlers
 {
@@ -8,7 +9,7 @@ namespace HBMP.Messages.Handlers
         {
             DisconnectMessageData disconnectMessageData = (DisconnectMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(disconnectMessageData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(disconnectMessageData.userId));
             packetByteBuf.create();
 
             return packetByteBuf;
@@ -16,18 +17,15 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
-                if (Client.instance != null)
-                {
-                    Client.instance.Shutdown();
-                }
+                SteamManager.Disconnect(false);
             }
         }
     }
     
     public class DisconnectMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
     }
 }

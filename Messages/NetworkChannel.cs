@@ -1,6 +1,6 @@
 namespace HBMP.Messages
 {
-    public enum NetworkChannel : byte {
+    public enum NetworkChannel : int {
         Reliable    = 0,
         Unreliable  = 1,
         Attack      = 2,

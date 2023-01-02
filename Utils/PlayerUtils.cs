@@ -2,6 +2,7 @@ using System.Linq;
 using HBMP.Nodes;
 using HBMP.Representations;
 using MelonLoader;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Utils
@@ -10,14 +11,14 @@ namespace HBMP.Utils
     {
         public static Transform GetRandomPlayerHead()
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 int randomChance = Random.Range(0, 2);
                 if (randomChance == 0)
                 {
                     MelonLogger.Msg("Retargetting enemy to: ");
                     int selection = Random.Range(0, PlayerRepresentation.representations.Count);
-                    long userId = PlayerRepresentation.representations.Keys.ToList()[selection];
+                    SteamId userId = PlayerRepresentation.representations.Keys.ToList()[selection];
                     PlayerRepresentation representation = PlayerRepresentation.representations[userId];
                     MelonLogger.Msg(representation.username);
                     return representation.head;

@@ -5,6 +5,7 @@ using HBMP.DataType;
 using HBMP.Nodes;
 using HBMP.Object;
 using MelonLoader;
+using Steamworks;
 
 namespace HBMP.Messages.Handlers
 {
@@ -15,7 +16,7 @@ namespace HBMP.Messages.Handlers
             TransformUpdateData transformUpdateData = (TransformUpdateData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
             packetByteBuf.WriteUShort(transformUpdateData.objectId);
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(transformUpdateData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(transformUpdateData.userId));
             packetByteBuf.WriteSimpleTransform(transformUpdateData.sTransform);
             packetByteBuf.create();
 
@@ -31,7 +32,7 @@ namespace HBMP.Messages.Handlers
                 return;
             }
 
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             List<byte> transformBytes = new List<byte>();
             for (int i = packetByteBuf.byteIndex; i < packetByteBuf.getBytes().Length; i++) {
                 transformBytes.Add(packetByteBuf.getBytes()[i]);
@@ -44,7 +45,7 @@ namespace HBMP.Messages.Handlers
 
     public class TransformUpdateData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public ushort objectId;
         public SimplifiedTransform sTransform;
     }

@@ -3,6 +3,7 @@ using System.Linq;
 using HBMP.Nodes;
 using HBMP.Object;
 using HBMP.Patches;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Messages.Handlers
@@ -13,7 +14,7 @@ namespace HBMP.Messages.Handlers
         {
             EnemyDestroyMessageData enemyDestroyMessageData = (EnemyDestroyMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(enemyDestroyMessageData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(enemyDestroyMessageData.userId));
             packetByteBuf.WriteUShort(enemyDestroyMessageData.groupId);
             packetByteBuf.create();
 
@@ -22,7 +23,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             ushort groupId = packetByteBuf.ReadUShort();
             List<SyncedObject> objects = SyncedObject.relatedSyncedObjects[groupId];
             EnemyRoot enemyRoot = null;
@@ -43,7 +44,7 @@ namespace HBMP.Messages.Handlers
 
     public class EnemyDestroyMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public ushort groupId;
 
     }

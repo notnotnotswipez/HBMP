@@ -12,7 +12,7 @@ namespace HBMP.Utils
             string sdkPath = DataDirectory.GetPath("discord_game_sdk.dll");
             if (!File.Exists(sdkPath))
             {
-                File.WriteAllBytes(sdkPath, EmbeddedAssetBundle.LoadFromAssembly(Assembly.GetExecutingAssembly(), "HBMP.Resources.discord_game_sdk.dll"));
+                File.WriteAllBytes(sdkPath, EmbeddedAssetBundle.LoadFromAssembly(Assembly.GetExecutingAssembly(), "HBMPSteamNetwork.Resources.discord_game_sdk.dll"));
             }
             _ = DllTools.LoadLibrary(sdkPath);
         }

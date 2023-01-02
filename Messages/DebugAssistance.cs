@@ -15,7 +15,7 @@ namespace HBMP.Messages
 
             PacketByteBuf secondBuf = new PacketByteBuf(realData);
             
-            MessageHandler.ReadMessage((NetworkMessageType)messageType, secondBuf, DiscordIntegration.currentUser.Id);
+            MessageHandler.ReadMessage((NetworkMessageType)messageType, secondBuf, 0);
         }
     }
 }

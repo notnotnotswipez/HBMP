@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HBMP.DataType;
 using HBMP.Representations;
+using Steamworks;
 
 namespace HBMP.Messages.Handlers
 {
@@ -10,7 +11,7 @@ namespace HBMP.Messages.Handlers
         {
             IkSyncMessageData ikSyncMessageData = (IkSyncMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(ikSyncMessageData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(ikSyncMessageData.userId));
             packetByteBuf.WriteByte(ikSyncMessageData.boneIndex);
             packetByteBuf.WriteSimpleTransform(ikSyncMessageData.simplifiedTransform);
             packetByteBuf.create();
@@ -20,7 +21,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             byte path = packetByteBuf.ReadByte();
             List<byte> transformBytes = new List<byte>();
             for (int i = packetByteBuf.byteIndex; i < packetByteBuf.getBytes().Length; i++) {
@@ -38,7 +39,7 @@ namespace HBMP.Messages.Handlers
 
     public class IkSyncMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public byte boneIndex;
         public SimplifiedTransform simplifiedTransform;
     }

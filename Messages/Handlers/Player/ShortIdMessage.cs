@@ -1,4 +1,5 @@
 using System;
+using Steamworks;
 
 namespace HBMP.Messages.Handlers
 {
@@ -8,7 +9,7 @@ namespace HBMP.Messages.Handlers
         {
             ShortIdMessageData shortIdMessageData = (ShortIdMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteLong(shortIdMessageData.userId);
+            packetByteBuf.WriteULong(shortIdMessageData.userId.Value);
             packetByteBuf.WriteByte(shortIdMessageData.byteId);
             packetByteBuf.create();
             return packetByteBuf;
@@ -19,21 +20,18 @@ namespace HBMP.Messages.Handlers
             if (packetByteBuf.getBytes().Length <= 0)
                 throw new IndexOutOfRangeException();
 
-            int index = 0;
-            long userId = BitConverter.ToInt64(packetByteBuf.getBytes(), index);
-            index += sizeof(long);
+            ulong userId = packetByteBuf.ReadULong();
+            byte byteId = packetByteBuf.ReadByte();
 
-            byte byteId = packetByteBuf.getBytes()[index++];
-
-            if (userId == DiscordIntegration.currentUser.Id)
-                DiscordIntegration.localByteId = byteId;
-            DiscordIntegration.RegisterUser(userId, byteId);
+            if (userId == SteamManager.currentId)
+                SteamManager.localByteId = byteId;
+            SteamManager.RegisterUser(byteId, userId);
         }
     }
 
     public class ShortIdMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public byte byteId;
     }
 }

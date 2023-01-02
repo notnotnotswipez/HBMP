@@ -2,6 +2,7 @@ using HBMP.Nodes;
 using HBMP.Object;
 using InteractionSystem;
 using MelonLoader;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Messages.Handlers
@@ -13,7 +14,7 @@ namespace HBMP.Messages.Handlers
             OwnerChangeData ownerQueueChangeData = (OwnerChangeData)messageData;
             
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(ownerQueueChangeData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(ownerQueueChangeData.userId));
             packetByteBuf.WriteUShort(ownerQueueChangeData.objectId);
             packetByteBuf.create();
 
@@ -22,7 +23,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
 
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
@@ -55,7 +56,7 @@ namespace HBMP.Messages.Handlers
 
     public class OwnerChangeData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public ushort objectId;
     }
 }

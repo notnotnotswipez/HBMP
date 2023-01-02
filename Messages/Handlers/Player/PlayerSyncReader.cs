@@ -6,6 +6,7 @@ using HBMP.Extensions;
 using HBMP.Nodes;
 using HBMP.Representations;
 using MelonLoader;
+using Steamworks;
 using TMPro;
 using UnityEngine;
 
@@ -18,7 +19,7 @@ namespace HBMP.Messages.Handlers
             PlayerSyncMessageData playerSyncMessageData = (PlayerSyncMessageData)messageData;
             List<byte> rawBytes = new List<byte>();
 
-            rawBytes.Add(DiscordIntegration.GetByteId(playerSyncMessageData.userId));
+            rawBytes.Add(SteamManager.GetByteId(playerSyncMessageData.userId));
 
             for (int r = 0; r < playerSyncMessageData.simplifiedTransforms.Length; r++)
                 rawBytes.AddRange(playerSyncMessageData.simplifiedTransforms[r].GetBytes());
@@ -37,16 +38,16 @@ namespace HBMP.Messages.Handlers
 
             int index = 0;
 
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.getBytes()[index++]);
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.getBytes()[index++]);
             if (userId == 0)
             {
                 RequestIdsMessageData requestIdsMessageData = new RequestIdsMessageData()
                 {
-                    userId = DiscordIntegration.currentUser.Id
+                    userId = SteamManager.currentId
                 };
                 PacketByteBuf shortBuf =
                     MessageHandler.CompressMessage(NetworkMessageType.RequestIdsMessage, requestIdsMessageData);
-                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, shortBuf.getBytes());
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, shortBuf);
                 return;
             }
 
@@ -71,18 +72,18 @@ namespace HBMP.Messages.Handlers
                     "Something is wrong, player representation sent update but doesnt exist, requesting updates from host.");
                 RequestIdsMessageData requestIdsMessageData = new RequestIdsMessageData()
                 {
-                    userId = DiscordIntegration.currentUser.Id
+                    userId = SteamManager.currentId
                 };
                 PacketByteBuf shortBuf =
                     MessageHandler.CompressMessage(NetworkMessageType.RequestIdsMessage, requestIdsMessageData);
-                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, shortBuf.getBytes());
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, shortBuf);
             }
         }
     }
 
     public class PlayerSyncMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public SimplifiedTransform[] simplifiedTransforms = new SimplifiedTransform[3];
     }
 }

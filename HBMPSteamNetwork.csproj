@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>HBMP</RootNamespace>
-    <AssemblyName>HBMP</AssemblyName>
+    <AssemblyName>HBMPSteamNetwork</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -63,6 +63,9 @@
     </Reference>
     <Reference Include="Facepunch.Steamworks">
       <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Hard Bullet_Data\Managed\Facepunch.Steamworks.dll</HintPath>
+    </Reference>
+    <Reference Include="Facepunch.Steamworks.Win64">
+      <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Plugins\Facepunch.Steamworks.Win64.dll</HintPath>
     </Reference>
     <Reference Include="FMODUnity">
       <HintPath>..\..\SteamLibrary\steamapps\common\Hard Bullet\Hard Bullet_Data\Managed\FMODUnity.dll</HintPath>
@@ -496,7 +499,6 @@
     <Compile Include="MainMod.cs" />
     <Compile Include="DataType\SimplifiedQuaternion.cs" />
     <Compile Include="DataType\SimplifiedTransform.cs" />
-    <Compile Include="DiscordIntegration.cs" />
     <Compile Include="Discord\ActivityManager.cs" />
     <Compile Include="Discord\Constants.cs" />
     <Compile Include="Discord\Core.cs" />
@@ -531,14 +533,13 @@
     <Compile Include="Messages\NetworkChannel.cs" />
     <Compile Include="Messages\NetworkMessageTypes.cs" />
     <Compile Include="Messages\PacketByteBuf.cs" />
-    <Compile Include="Nodes\Client.cs" />
-    <Compile Include="Nodes\Node.cs" />
-    <Compile Include="Nodes\Server.cs" />
+    <Compile Include="Nodes\SteamPacketNode.cs" />
     <Compile Include="Object\SyncedObject.cs" />
     <Compile Include="Patches\Patches.cs" />
     <Compile Include="Patches\WaitForNotMoving.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Representations\PlayerRepresentation.cs" />
+    <Compile Include="SteamManager.cs" />
     <Compile Include="Utils\DataDirectory.cs" />
     <Compile Include="Utils\DllTools.cs" />
     <Compile Include="Utils\EmbeddedAssetBundle.cs" />

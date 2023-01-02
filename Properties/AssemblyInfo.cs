@@ -4,17 +4,17 @@ using System.Runtime.InteropServices;
 using MelonLoader;
 using HBMP;
 // ...
-[assembly: MelonInfo(typeof(MainMod), "HBMP", "1.4.0", "notnotnotswipez")]
+[assembly: MelonInfo(typeof(MainMod), "HBMPSteamNetwork", "1.4.0", "notnotnotswipez")]
 [assembly: MelonGame("GexagonVR", "Hard Bullet")]
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("HBMP")]
+[assembly: AssemblyTitle("HBMPSteamNetwork")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("HBMP")]
+[assembly: AssemblyProduct("HBMPSteamNetwork")]
 [assembly: AssemblyCopyright("Copyright ©  2022")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

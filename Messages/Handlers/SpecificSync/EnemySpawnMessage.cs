@@ -7,6 +7,7 @@ using HBMP.Patches;
 using HBMP.Utils;
 using MelonLoader;
 using NodeCanvas.Framework;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Messages.Handlers
@@ -17,7 +18,7 @@ namespace HBMP.Messages.Handlers
         {
             EnemySpawnMessageData enemySpawnMessageData = (EnemySpawnMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(enemySpawnMessageData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(enemySpawnMessageData.userId));
             packetByteBuf.WriteUShort(enemySpawnMessageData.groupId);
             packetByteBuf.WriteUShort(enemySpawnMessageData.startingObjectId);
             packetByteBuf.WriteBool(enemySpawnMessageData.shouldRevertToOwner);
@@ -27,7 +28,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             ushort groupId = packetByteBuf.ReadUShort();
             ushort lastObjectId = packetByteBuf.ReadUShort();
             bool shouldRevertToOwner = packetByteBuf.ReadBoolean();
@@ -102,7 +103,7 @@ namespace HBMP.Messages.Handlers
 
     public class EnemySpawnMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public ushort groupId;
         public ushort startingObjectId;
         public bool shouldRevertToOwner;

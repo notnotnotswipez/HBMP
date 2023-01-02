@@ -90,6 +90,13 @@ namespace HBMP.Messages
             byteIndex += sizeof(ushort);
             return longNum;
         }
+        
+        public ulong ReadULong()
+        {
+            ulong longNum = BitConverter.ToUInt64(getBytes(), byteIndex);
+            byteIndex += sizeof(ulong);
+            return longNum;
+        }
 
         public void WriteType(NetworkMessageType networkMessageType)
         {
@@ -124,6 +131,13 @@ namespace HBMP.Messages
         }
         
         public void WriteUShort(ushort shor)
+        {
+            foreach (byte b in BitConverter.GetBytes(shor)) {
+                byteList.Add(b);
+            }
+        }
+        
+        public void WriteULong(ulong shor)
         {
             foreach (byte b in BitConverter.GetBytes(shor)) {
                 byteList.Add(b);

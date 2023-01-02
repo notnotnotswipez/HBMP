@@ -12,6 +12,7 @@ using HBMP.Object;
 using HBMP.Utils;
 using InteractionSystem;
 using MelonLoader;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Patches
@@ -26,14 +27,14 @@ namespace HBMP.Patches
             {
                 GunshotMessageData gunshotMessageData = new GunshotMessageData()
                 {
-                    userId = DiscordIntegration.currentUser.Id,
+                    userId = SteamManager.currentId,
                     objectId = syncedObject.currentId
                 };
 
                 PacketByteBuf packetByteBuf =
                     MessageHandler.CompressMessage(NetworkMessageType.GunshotMessage, gunshotMessageData);
 
-                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Attack, packetByteBuf.getBytes());
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Attack, packetByteBuf);
             }
 
             yield break;
@@ -49,7 +50,7 @@ namespace HBMP.Patches
                 {
                     if (SyncedObject.returnedEnemyRoots.ContainsKey(enemyRoot))
                     {
-                        long ownerId = SyncedObject.returnedEnemyRoots[enemyRoot];
+                        SteamId ownerId = SyncedObject.returnedEnemyRoots[enemyRoot];
                         object coroutineTask =
                             MelonCoroutines.Start(PatchCoroutines.WaitForEnemyReSync(syncedObject, ownerId));
                         PatchVariables.deletionCourotine.Add(enemyRoot, coroutineTask);
@@ -88,7 +89,7 @@ namespace HBMP.Patches
             yield break;
         }
 
-        public static IEnumerator WaitForEnemyReSync(SyncedObject syncedObject, long userId)
+        public static IEnumerator WaitForEnemyReSync(SyncedObject syncedObject, SteamId userId)
         {
             yield return new WaitForNotMoving(syncedObject);
             yield return new WaitForSecondsRealtime(2f);
@@ -140,14 +141,14 @@ namespace HBMP.Patches
 
                 EnemyDestroyMessageData enemyDestroyMessageData = new EnemyDestroyMessageData()
                 {
-                    userId = DiscordIntegration.currentUser.Id,
+                    userId = SteamManager.currentId,
                     groupId = groupId
                 };
 
                 PacketByteBuf packetByteBuf =
                     MessageHandler.CompressMessage(NetworkMessageType.EnemyDestroyMessage, enemyDestroyMessageData);
 
-                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
             }
         }
     }
@@ -165,7 +166,7 @@ namespace HBMP.Patches
         public static void Postfix(EntitySpawner __instance, GameObject entity, EntitySpawnProperties properties,
             bool __result)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 if (__result)
                 {
@@ -182,9 +183,9 @@ namespace HBMP.Patches
     {
         public static bool Prefix(SceneLoader __instance)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
-                if (!DiscordIntegration.isHost)
+                if (!SteamManager.Instance.isHost)
                 {
                     CameraFader cameraFader =
                         UnityEngine.Resources.FindObjectsOfTypeAll<CameraFader>().FirstOrDefault();
@@ -203,7 +204,7 @@ namespace HBMP.Patches
         public static void Postfix(InfinityWaveSpawner __instance, ref List<HealthContainer> ____aliveEnemies,
             bool __result)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 if (__result)
                 {
@@ -218,7 +219,7 @@ namespace HBMP.Patches
     {
         public static void Prefix(InfinityWaveSpawner __instance, ref List<HealthContainer> ____allEnemies)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 List<ushort> groupIds = new List<ushort>();
                 foreach (HealthContainer healthContainer in ____allEnemies)
@@ -245,7 +246,7 @@ namespace HBMP.Patches
         public static void Postfix(EnemySpawnerFromGenerator __instance, EnemyData enemyData,
             ref List<GameObject> ___spawnedObjects)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 MelonCoroutines.Start(PatchCoroutines.WaitForEnemySyncGenerator(___spawnedObjects));
             }
@@ -257,7 +258,7 @@ namespace HBMP.Patches
     {
         public static void Prefix(EnemySpawnerFromGenerator __instance, ref List<GameObject> ___spawnedObjects)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 foreach (GameObject enemy in ___spawnedObjects)
                 {
@@ -266,7 +267,7 @@ namespace HBMP.Patches
                         SyncedObject syncedObject = enemy.GetComponent<SyncedObject>();
                         EnemyDestroyMessageData enemyDestroyMessageData = new EnemyDestroyMessageData()
                         {
-                            userId = DiscordIntegration.currentUser.Id,
+                            userId = SteamManager.currentId,
                             groupId = syncedObject.groupId
                         };
 
@@ -274,7 +275,7 @@ namespace HBMP.Patches
                             MessageHandler.CompressMessage(NetworkMessageType.EnemyDestroyMessage,
                                 enemyDestroyMessageData);
 
-                        Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+                        SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
                     }
                 }
             }
@@ -291,7 +292,7 @@ namespace HBMP.Patches
         public static void Postfix(Grabbable __instance, Grabber grabber, TestGrab.GrabPoint grabPoint,
             ConfigurableJoint configurableJoint, GrabType grabType)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 MelonCoroutines.Start(PatchCoroutines.WaitForProperGrab(__instance.gameObject));
             }
@@ -303,7 +304,7 @@ namespace HBMP.Patches
     {
         public static void Postfix(Grabbable __instance, Grabber grabber)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 MelonCoroutines.Start(PatchCoroutines.WaitForProperUnGrab(__instance.gameObject));
             }
@@ -315,7 +316,7 @@ namespace HBMP.Patches
     {
         public static void Postfix(Chamber __instance)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 if (!PatchVariables.shouldIgnoreFire)
                 {
@@ -330,7 +331,7 @@ namespace HBMP.Patches
     {
         public static void Prefix(Explodeable __instance)
         {
-            if (DiscordIntegration.hasLobby)
+            if (SteamManager.Instance.isConnectedToLobby)
             {
                 SyncedObject syncedObject = __instance.gameObject.GetComponentInParent<SyncedObject>();
                 if (syncedObject)
@@ -342,14 +343,14 @@ namespace HBMP.Patches
 
                     ExplodeMessageData explodeMessageData = new ExplodeMessageData()
                     {
-                        userId = DiscordIntegration.currentUser.Id,
+                        userId = SteamManager.currentId,
                         objectId = syncedObject.currentId
                     };
 
                     PacketByteBuf packetByteBuf =
                         MessageHandler.CompressMessage(NetworkMessageType.ExplodeMessage, explodeMessageData);
 
-                    Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+                    SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
                 }
             }
         }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HBMP.Nodes;
 using HBMP.Object;
+using Steamworks;
 
 namespace HBMP.Messages.Handlers
 {
@@ -10,7 +11,7 @@ namespace HBMP.Messages.Handlers
         {
             ExplodeMessageData explodeMessageData = (ExplodeMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(explodeMessageData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(explodeMessageData.userId));
             packetByteBuf.WriteUShort(explodeMessageData.objectId);
             packetByteBuf.create();
 
@@ -19,7 +20,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
             if (syncedObject)
@@ -36,7 +37,7 @@ namespace HBMP.Messages.Handlers
 
     public class ExplodeMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public ushort objectId;
     }
 }

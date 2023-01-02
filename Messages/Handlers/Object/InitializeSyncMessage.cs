@@ -3,6 +3,7 @@ using HBMP.Nodes;
 using HBMP.Object;
 using InteractionSystem;
 using MelonLoader;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Messages.Handlers
@@ -13,7 +14,7 @@ namespace HBMP.Messages.Handlers
         {
             InitializeSyncData initializeSyncData = (InitializeSyncData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(initializeSyncData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(initializeSyncData.userId));
             packetByteBuf.WriteUShort(initializeSyncData.objectId);
             packetByteBuf.WriteUShort(initializeSyncData.groupId);
             packetByteBuf.WriteString(initializeSyncData.objectName);
@@ -24,7 +25,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
             ushort groupId = packetByteBuf.ReadUShort();
             string objectName = packetByteBuf.ReadString();
@@ -106,7 +107,7 @@ namespace HBMP.Messages.Handlers
     {
         public string objectName;
         public ushort objectId;
-        public long userId;
+        public SteamId userId;
         public ushort groupId;
     }
 }

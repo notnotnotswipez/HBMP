@@ -13,6 +13,7 @@ using HBMP.Utils;
 using MelonLoader;
 using NodeCanvas.StateMachines;
 using RootMotion.Dynamics;
+using Steamworks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -23,7 +24,7 @@ namespace HBMP.Object
         public static List<GameObject> tempActiveObjects = new List<GameObject>();
         
         public static Dictionary<ushort, SyncedObject> syncedObjectIds = new Dictionary<ushort, SyncedObject>();
-        public static Dictionary<EnemyRoot, long> returnedEnemyRoots = new Dictionary<EnemyRoot, long>();
+        public static Dictionary<EnemyRoot, SteamId> returnedEnemyRoots = new Dictionary<EnemyRoot, SteamId>();
         public static List<EnemyRoot> spawnedEnemies = new List<EnemyRoot>();
         public static List<GameObject> syncedObjects = new List<GameObject>();
         public static Dictionary<ushort, List<SyncedObject>> relatedSyncedObjects =
@@ -37,7 +38,7 @@ namespace HBMP.Object
         public Quaternion lastRotation;
         public static ushort lastId = 0;
         public static ushort lastGroupId = 0;
-        public long simulatorId = 0;
+        public SteamId simulatorId = 0;
         public ushort currentId = 0;
         public ushort groupId = 0;
         public bool isNpc = false;
@@ -78,7 +79,7 @@ namespace HBMP.Object
             if (!IsClientSimulated())
             {
                 MelonLogger.Msg("Transferred ownership of sync Id: "+currentId);
-                long currentUserId = DiscordIntegration.currentUser.Id;
+                SteamId currentUserId = SteamManager.currentId;
 
                 SetOwner(currentUserId);
                 OwnerChangeData ownerQueueChangeData = new OwnerChangeData()
@@ -88,7 +89,7 @@ namespace HBMP.Object
                 };
                 PacketByteBuf packetByteBuf = MessageHandler.CompressMessage(NetworkMessageType.OwnerChangeMessage,
                     ownerQueueChangeData);
-                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, packetByteBuf.getBytes());
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, packetByteBuf);
 
                 MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
                 foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
@@ -99,7 +100,7 @@ namespace HBMP.Object
             }
         }
 
-        public void ManualSetOwner(long userId, bool checkForSelfOwner)
+        public void ManualSetOwner(SteamId userId, bool checkForSelfOwner)
         {
             if (checkForSelfOwner)
             {
@@ -119,7 +120,7 @@ namespace HBMP.Object
             };
             PacketByteBuf packetByteBuf = MessageHandler.CompressMessage(NetworkMessageType.OwnerChangeMessage,
                 ownerQueueChangeData);
-            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Reliable, packetByteBuf.getBytes());
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, packetByteBuf);
 
             MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
             foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
@@ -150,7 +151,7 @@ namespace HBMP.Object
             enemyTrackTransfer.Clear();
         }
 
-        public static void MakeSyncedObject(GameObject gameObject, ushort objectId, long ownerId, ushort groupId, bool properAdd = true)
+        public static void MakeSyncedObject(GameObject gameObject, ushort objectId, SteamId ownerId, ushort groupId, bool properAdd = true)
         {
             SyncedObject syncedObject = gameObject.AddComponent<SyncedObject>();
             // If the group ID coming in is greater than or equal to the one stored clientside, then we should set it.
@@ -192,7 +193,7 @@ namespace HBMP.Object
 
         public static void Sync(GameObject desiredSync)
         {
-            if (!DiscordIntegration.hasLobby)
+            if (!SteamManager.Instance.isConnectedToLobby)
             {
                 return;
             }
@@ -248,7 +249,7 @@ namespace HBMP.Object
             ushort groupId = GetGroupId();
             EnemySpawnMessageData enemySpawnMessageData = new EnemySpawnMessageData()
             {
-                userId = DiscordIntegration.currentUser.Id,
+                userId = SteamManager.currentId,
                 groupId = groupId,
                 startingObjectId = lastId,
                 shouldRevertToOwner = shouldRevert
@@ -257,9 +258,9 @@ namespace HBMP.Object
             PacketByteBuf packetByteBuf =
                 MessageHandler.CompressMessage(NetworkMessageType.EnemySpawnMessage, enemySpawnMessageData);
 
-            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
 
-            long currentUser = DiscordIntegration.currentUser.Id;
+            SteamId currentUser = SteamManager.currentId;
             GameObject spawnedNPC = enemyRoot.gameObject;
             foreach (Rigidbody rigidbody in GetProperRigidBodies(spawnedNPC.transform, true)) {
                 GameObject npcObj = rigidbody.gameObject;
@@ -278,7 +279,7 @@ namespace HBMP.Object
             lastId++;
         }
 
-        public static void FutureProofSync(GameObject gameObject, ushort groupId, long ownerId)
+        public static void FutureProofSync(GameObject gameObject, ushort groupId, SteamId ownerId)
         {
             if (lastGroupId <= groupId)
             {
@@ -342,7 +343,7 @@ namespace HBMP.Object
 
             syncedObject.groupId = groupId;
             syncedObject.currentId = syncedId;
-            syncedObject.SetOwner(DiscordIntegration.currentUser.Id);
+            syncedObject.SetOwner(SteamManager.currentId);
             syncedObjects.Add(gameObject);
             if (!syncedObjectIds.ContainsKey(syncedId))
             {
@@ -355,7 +356,7 @@ namespace HBMP.Object
 
             InitializeSyncData initializeSyncData = new InitializeSyncData()
             {
-                userId = DiscordIntegration.currentUser.Id,
+                userId = SteamManager.currentId,
                 objectId = syncedId,
                 objectName = syncObject,
                 groupId = groupId
@@ -364,7 +365,7 @@ namespace HBMP.Object
             PacketByteBuf packetByteBuf =
                 MessageHandler.CompressMessage(NetworkMessageType.InitializeSyncMessage, initializeSyncData);
             
-            Node.activeNode.BroadcastMessage((byte)NetworkChannel.Object, packetByteBuf.getBytes());
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
         }
 
         private void OnOwnershipChange(bool owning)
@@ -442,9 +443,9 @@ namespace HBMP.Object
                     }
                 }
 
-                if (!Node.activeNode.connectedUsers.Contains(simulatorId))
+                if (!SteamManager.connectedIds.Contains(simulatorId))
                 {
-                    SetOwner(DiscordIntegration.lobby.OwnerId);
+                    SetOwner(SteamManager.Instance.currentLobby.Owner.Id);
                 }
             }
         }
@@ -616,7 +617,7 @@ namespace HBMP.Object
             return path;
         }
 
-        public void SetOwner(long userId)
+        public void SetOwner(SteamId userId)
         {
             simulatorId = userId;
             if (IsClientSimulated())
@@ -627,7 +628,7 @@ namespace HBMP.Object
 
         public bool IsClientSimulated()
         {
-            return simulatorId == DiscordIntegration.currentUser.Id;
+            return simulatorId == SteamManager.currentId;
         }
 
         public static SyncedObject GetSyncedObject(ushort objectId)
@@ -664,7 +665,7 @@ namespace HBMP.Object
 
         public void FixedUpdate()
         {
-            if (!DiscordIntegration.hasLobby)
+            if (!SteamManager.Instance.isConnectedToLobby)
             {
                 return;
             }
@@ -678,13 +679,13 @@ namespace HBMP.Object
                 TransformUpdateData transformUpdateData = new TransformUpdateData()
                 {
                     objectId = currentId,
-                    userId = DiscordIntegration.currentUser.Id,
+                    userId = SteamManager.currentId,
                     sTransform = simplifiedTransform
                 };
                 
                 PacketByteBuf packetByteBuf =
                     MessageHandler.CompressMessage(NetworkMessageType.TransformUpdateMessage, transformUpdateData);
-                Node.activeNode.BroadcastMessage((byte)NetworkChannel.Unreliable, packetByteBuf.getBytes());
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Unreliable, packetByteBuf);
             }
 
             UpdateStoredPositions();

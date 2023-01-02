@@ -5,6 +5,7 @@ using Discord;
 using HBMP.DataType;
 using HexabodyVR.PlayerController;
 using MelonLoader;
+using Steamworks;
 using TMPro;
 using UnityEngine;
 
@@ -15,9 +16,9 @@ namespace HBMP.Representations
         public GameObject playerRep;
         public GameObject nameTag;
         public GameObject ikBody;
-        public static Dictionary<long, PlayerRepresentation> representations = new Dictionary<long, PlayerRepresentation>();
+        public static Dictionary<SteamId, PlayerRepresentation> representations = new Dictionary<SteamId, PlayerRepresentation>();
         public Dictionary<byte, GameObject> boneDictionary = new Dictionary<byte, GameObject>();
-        public User user;
+        public Friend user;
         public String username;
 
         private byte currentBoneId = 0;
@@ -26,7 +27,7 @@ namespace HBMP.Representations
         public Transform handR;
         public Transform handL;
 
-        public PlayerRepresentation(User user)
+        public PlayerRepresentation(Friend user)
         {
             ikBody = GameObject.Instantiate(GameObject.Find("[HARD BULLET PLAYER]"));
             GameObject.Destroy(ikBody.transform.Find("PlayerSystems").gameObject);
@@ -48,14 +49,14 @@ namespace HBMP.Representations
             playerRep = GameObject.Instantiate(Mod.player, new Vector3(0, 1, 0), Quaternion.identity);
             nameTag = GameObject.Instantiate(GameObject.Find("notification(Clone)"));
             nameTag.name = "nametag";
-            nameTag.GetComponent<TMP_Text>().text = user.Username;
+            nameTag.GetComponent<TMP_Text>().text = user.Name;
             nameTag.GetComponent<TMP_Text>().horizontalAlignment = HorizontalAlignmentOptions.Center;
             nameTag.GetComponent<TMP_Text>().autoSizeTextContainer = true;
             nameTag.GetComponent<TMP_Text>().enableAutoSizing = true;
             nameTag.transform.localScale = new Vector3(0.02f, 0.02f, 0.02f);
 
-            playerRep.name = "(PlayerRep)"+user.Username;
-            username = user.Username;
+            playerRep.name = "(PlayerRep)"+user.Name;
+            username = user.Name;
             this.user = user;
             PrepareForMultiplayer();
             boneDictionary.Add(currentBoneId++, ikBody.transform.Find("HexaBody").Find("PlayerModel").Find("PlayerModel").Find("root").gameObject);
@@ -120,17 +121,17 @@ namespace HBMP.Representations
             GameObject cosmetics = head.Find("Cosmetics").gameObject;
             GameObject toEnable = null;
             // Hazzy
-            if (user.Id == 455212357874876417)
+            if (user.Id == 76561198843066427)
             {
                 toEnable = cosmetics.transform.Find("Hazzy").gameObject;
             }
             // Squidy
-            else if (user.Id == 303836568496504832)
+            else if (user.Id == 76561198301131664)
             {
                 toEnable = cosmetics.transform.Find("squidylad").gameObject;
             }
             // Swipez
-            else if (user.Id == 186608104274788352)
+            else if (user.Id == 76561198885873876)
             {
                 toEnable = cosmetics.transform.Find("swipez").gameObject;
             }

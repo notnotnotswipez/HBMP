@@ -7,6 +7,7 @@ using HBMP.Nodes;
 using HBMP.Object;
 using HBMP.Patches;
 using InteractionSystem;
+using Steamworks;
 using UnityEngine;
 
 namespace HBMP.Messages.Handlers
@@ -18,7 +19,7 @@ namespace HBMP.Messages.Handlers
             GunshotMessageData gunshotMessageData = (GunshotMessageData)messageData;
             
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(DiscordIntegration.GetByteId(gunshotMessageData.userId));
+            packetByteBuf.WriteByte(SteamManager.GetByteId(gunshotMessageData.userId));
             packetByteBuf.WriteUShort(gunshotMessageData.objectId);
             packetByteBuf.create();
 
@@ -27,7 +28,7 @@ namespace HBMP.Messages.Handlers
 
         public override void ReadData(PacketByteBuf packetByteBuf, long sender)
         {
-            long userId = DiscordIntegration.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
             
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
@@ -86,7 +87,7 @@ namespace HBMP.Messages.Handlers
 
     public class GunshotMessageData : MessageData
     {
-        public long userId;
+        public SteamId userId;
         public ushort objectId;
     }
 }
