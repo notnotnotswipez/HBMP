@@ -1,4 +1,5 @@
 using System;
+using HBMP.Nodes;
 using Steamworks;
 
 namespace HBMP.Messages.Handlers
@@ -15,7 +16,7 @@ namespace HBMP.Messages.Handlers
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
             if (packetByteBuf.getBytes().Length <= 0)
                 throw new IndexOutOfRangeException();
@@ -23,9 +24,27 @@ namespace HBMP.Messages.Handlers
             ulong userId = packetByteBuf.ReadULong();
             byte byteId = packetByteBuf.ReadByte();
 
-            if (userId == SteamManager.currentId)
-                SteamManager.localByteId = byteId;
-            SteamManager.RegisterUser(byteId, userId);
+            if (userId == SteamIntegration.currentId)
+                SteamIntegration.localByteId = byteId;
+            
+            SteamIntegration.RegisterUser(byteId, userId);
+            
+            if (userId != SteamIntegration.currentId)
+            {
+                PlayerConfirmData playerConfirmData = new PlayerConfirmData()
+                {
+                    userId = SteamIntegration.currentId.Value
+                };
+                PacketByteBuf confirmBuff =
+                    PacketHandler.CompressMessage(PacketType.PlayerConfirmationMessage, playerConfirmData);
+
+                SteamPacketNode.SendMessage(userId, NetworkChannel.Reliable, confirmBuff.getBytes());
+            }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new NotImplementedException();
         }
     }
 

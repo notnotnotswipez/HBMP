@@ -27,14 +27,14 @@ namespace HBMP.Patches
             {
                 GunshotMessageData gunshotMessageData = new GunshotMessageData()
                 {
-                    userId = SteamManager.currentId,
+                    userId = SteamIntegration.currentId,
                     objectId = syncedObject.currentId
                 };
 
                 PacketByteBuf packetByteBuf =
-                    MessageHandler.CompressMessage(NetworkMessageType.GunshotMessage, gunshotMessageData);
+                    PacketHandler.CompressMessage(PacketType.GunshotMessage, gunshotMessageData);
 
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Attack, packetByteBuf);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Attack, packetByteBuf.getBytes());
             }
 
             yield break;
@@ -141,14 +141,14 @@ namespace HBMP.Patches
 
                 EnemyDestroyMessageData enemyDestroyMessageData = new EnemyDestroyMessageData()
                 {
-                    userId = SteamManager.currentId,
+                    userId = SteamIntegration.currentId,
                     groupId = groupId
                 };
 
                 PacketByteBuf packetByteBuf =
-                    MessageHandler.CompressMessage(NetworkMessageType.EnemyDestroyMessage, enemyDestroyMessageData);
+                    PacketHandler.CompressMessage(PacketType.EnemyDestroyMessage, enemyDestroyMessageData);
 
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf.getBytes());
             }
         }
     }
@@ -163,17 +163,13 @@ namespace HBMP.Patches
         new Type[] { typeof(GameObject), typeof(EntitySpawnProperties) })]
     class EntitySpawnerPatch
     {
-        public static void Postfix(EntitySpawner __instance, GameObject entity, EntitySpawnProperties properties,
-            bool __result)
+        public static void Postfix(EntitySpawner __instance, GameObject entity, EntitySpawnProperties properties)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
-                if (__result)
-                {
-                    MelonLogger.Msg("Created entity.");
-                    MelonLogger.Msg("Spawned entity from entity spawner.");
-                    MelonCoroutines.Start(PatchCoroutines.WaitForEnemySyncSingular(entity));
-                }
+                MelonLogger.Msg("Created entity.");
+                MelonLogger.Msg("Spawned entity from entity spawner.");
+                MelonCoroutines.Start(PatchCoroutines.WaitForEnemySyncSingular(entity));
             }
         }
     }
@@ -183,9 +179,9 @@ namespace HBMP.Patches
     {
         public static bool Prefix(SceneLoader __instance)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
-                if (!SteamManager.Instance.isHost)
+                if (!SteamIntegration.isHost)
                 {
                     CameraFader cameraFader =
                         UnityEngine.Resources.FindObjectsOfTypeAll<CameraFader>().FirstOrDefault();
@@ -204,7 +200,7 @@ namespace HBMP.Patches
         public static void Postfix(InfinityWaveSpawner __instance, ref List<HealthContainer> ____aliveEnemies,
             bool __result)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 if (__result)
                 {
@@ -219,7 +215,7 @@ namespace HBMP.Patches
     {
         public static void Prefix(InfinityWaveSpawner __instance, ref List<HealthContainer> ____allEnemies)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 List<ushort> groupIds = new List<ushort>();
                 foreach (HealthContainer healthContainer in ____allEnemies)
@@ -246,7 +242,7 @@ namespace HBMP.Patches
         public static void Postfix(EnemySpawnerFromGenerator __instance, EnemyData enemyData,
             ref List<GameObject> ___spawnedObjects)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 MelonCoroutines.Start(PatchCoroutines.WaitForEnemySyncGenerator(___spawnedObjects));
             }
@@ -258,7 +254,7 @@ namespace HBMP.Patches
     {
         public static void Prefix(EnemySpawnerFromGenerator __instance, ref List<GameObject> ___spawnedObjects)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 foreach (GameObject enemy in ___spawnedObjects)
                 {
@@ -267,44 +263,39 @@ namespace HBMP.Patches
                         SyncedObject syncedObject = enemy.GetComponent<SyncedObject>();
                         EnemyDestroyMessageData enemyDestroyMessageData = new EnemyDestroyMessageData()
                         {
-                            userId = SteamManager.currentId,
+                            userId = SteamIntegration.currentId,
                             groupId = syncedObject.groupId
                         };
 
                         PacketByteBuf packetByteBuf =
-                            MessageHandler.CompressMessage(NetworkMessageType.EnemyDestroyMessage,
+                            PacketHandler.CompressMessage(PacketType.EnemyDestroyMessage,
                                 enemyDestroyMessageData);
 
-                        SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
+                        SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf.getBytes());
                     }
                 }
             }
         }
     }
 
-    [HarmonyPatch(typeof(Grabbable), "AttemptGrab", new Type[]
-    {
-        typeof(Grabber),
-        typeof(TestGrab.GrabPoint), typeof(ConfigurableJoint), typeof(GrabType)
-    })]
+    [HarmonyPatch(typeof(Grabbable), "AttemptGrab")]
     class GrabPatch
     {
-        public static void Postfix(Grabbable __instance, Grabber grabber, TestGrab.GrabPoint grabPoint,
-            ConfigurableJoint configurableJoint, GrabType grabType)
+        public static void Postfix(Grabbable __instance)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 MelonCoroutines.Start(PatchCoroutines.WaitForProperGrab(__instance.gameObject));
             }
         }
     }
 
-    [HarmonyPatch(typeof(Grabbable), "AttemptUngrab", new Type[] { typeof(Grabber) })]
+    [HarmonyPatch(typeof(Grabbable), "AttemptUngrab")]
     class UnGrabPatch
     {
-        public static void Postfix(Grabbable __instance, Grabber grabber)
+        public static void Postfix(Grabbable __instance)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 MelonCoroutines.Start(PatchCoroutines.WaitForProperUnGrab(__instance.gameObject));
             }
@@ -316,7 +307,7 @@ namespace HBMP.Patches
     {
         public static void Postfix(Chamber __instance)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 if (!PatchVariables.shouldIgnoreFire)
                 {
@@ -331,7 +322,7 @@ namespace HBMP.Patches
     {
         public static void Prefix(Explodeable __instance)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 SyncedObject syncedObject = __instance.gameObject.GetComponentInParent<SyncedObject>();
                 if (syncedObject)
@@ -343,14 +334,14 @@ namespace HBMP.Patches
 
                     ExplodeMessageData explodeMessageData = new ExplodeMessageData()
                     {
-                        userId = SteamManager.currentId,
+                        userId = SteamIntegration.currentId,
                         objectId = syncedObject.currentId
                     };
 
                     PacketByteBuf packetByteBuf =
-                        MessageHandler.CompressMessage(NetworkMessageType.ExplodeMessage, explodeMessageData);
+                        PacketHandler.CompressMessage(PacketType.ExplodeMessage, explodeMessageData);
 
-                    SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
+                    SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf.getBytes());
                 }
             }
         }

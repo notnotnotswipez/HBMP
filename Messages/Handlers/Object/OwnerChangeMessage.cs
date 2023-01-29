@@ -14,16 +14,16 @@ namespace HBMP.Messages.Handlers
             OwnerChangeData ownerQueueChangeData = (OwnerChangeData)messageData;
             
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(ownerQueueChangeData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(ownerQueueChangeData.userId));
             packetByteBuf.WriteUShort(ownerQueueChangeData.objectId);
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
 
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
@@ -36,7 +36,7 @@ namespace HBMP.Messages.Handlers
             {
                 if (hand.HasGrabbedObject)
                 {
-                    if (hand.CurentGrab.Grabbable.gameObject.Equals(syncedObject.gameObject))
+                    if (hand.CurrentGrab.Grabbable.gameObject.Equals(syncedObject.gameObject))
                     {
                         hand.Ungrab();
                     }
@@ -51,6 +51,11 @@ namespace HBMP.Messages.Handlers
                     relatedSync.SetOwner(userId);
                 }
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

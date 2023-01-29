@@ -11,7 +11,7 @@ namespace HBMP.Utils
     {
         public static Transform GetRandomPlayerHead()
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 int randomChance = Random.Range(0, 2);
                 if (randomChance == 0)

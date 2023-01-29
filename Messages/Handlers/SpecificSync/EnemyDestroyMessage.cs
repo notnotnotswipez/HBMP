@@ -14,16 +14,16 @@ namespace HBMP.Messages.Handlers
         {
             EnemyDestroyMessageData enemyDestroyMessageData = (EnemyDestroyMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(enemyDestroyMessageData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(enemyDestroyMessageData.userId));
             packetByteBuf.WriteUShort(enemyDestroyMessageData.groupId);
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             ushort groupId = packetByteBuf.ReadUShort();
             List<SyncedObject> objects = SyncedObject.relatedSyncedObjects[groupId];
             EnemyRoot enemyRoot = null;
@@ -39,6 +39,11 @@ namespace HBMP.Messages.Handlers
                 SyncedObject.spawnedEnemies.Remove(enemyRoot);
                 GameObject.Destroy(enemyRoot.gameObject);
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

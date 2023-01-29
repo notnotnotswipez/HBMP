@@ -16,14 +16,14 @@ namespace HBMP.Messages.Handlers
             TransformUpdateData transformUpdateData = (TransformUpdateData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
             packetByteBuf.WriteUShort(transformUpdateData.objectId);
-            packetByteBuf.WriteByte(SteamManager.GetByteId(transformUpdateData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(transformUpdateData.userId));
             packetByteBuf.WriteSimpleTransform(transformUpdateData.sTransform);
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
             ushort objectId = packetByteBuf.ReadUShort();
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
@@ -32,7 +32,7 @@ namespace HBMP.Messages.Handlers
                 return;
             }
 
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             List<byte> transformBytes = new List<byte>();
             for (int i = packetByteBuf.byteIndex; i < packetByteBuf.getBytes().Length; i++) {
                 transformBytes.Add(packetByteBuf.getBytes()[i]);
@@ -40,6 +40,11 @@ namespace HBMP.Messages.Handlers
             SimplifiedTransform simpleTransform = SimplifiedTransform.FromBytes(transformBytes.ToArray());
 
             syncedObject.UpdateObject(simpleTransform);
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new NotImplementedException();
         }
     }
 

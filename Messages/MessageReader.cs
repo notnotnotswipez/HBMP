@@ -5,9 +5,11 @@ namespace HBMP.Messages
     public abstract class MessageReader
     {
         public abstract PacketByteBuf CompressData(MessageData messageData);
-        public abstract void ReadData(PacketByteBuf packetByteBuf, long sender);
+        public abstract void ReadData(PacketByteBuf packetByteBuf, ulong sender);
+        
+        public abstract void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender);
 
-        public byte[] WriteTypeToBeginning(NetworkMessageType type, PacketByteBuf packetByteBuf)
+        public byte[] WriteTypeToBeginning(PacketType type, PacketByteBuf packetByteBuf)
         {
             List<byte> allBytes = new List<byte>();
             allBytes.Add((byte)type);

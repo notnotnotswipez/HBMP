@@ -14,7 +14,7 @@ namespace HBMP.Messages.Handlers
         {
             InitializeSyncData initializeSyncData = (InitializeSyncData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(initializeSyncData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(initializeSyncData.userId));
             packetByteBuf.WriteUShort(initializeSyncData.objectId);
             packetByteBuf.WriteUShort(initializeSyncData.groupId);
             packetByteBuf.WriteString(initializeSyncData.objectName);
@@ -23,9 +23,9 @@ namespace HBMP.Messages.Handlers
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
             ushort groupId = packetByteBuf.ReadUShort();
             string objectName = packetByteBuf.ReadString();
@@ -100,6 +100,11 @@ namespace HBMP.Messages.Handlers
             {
                 MelonLogger.Error("Received request to sync object with id: "+objectId+", but that slot is already taken up!");
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

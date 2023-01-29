@@ -26,11 +26,17 @@ namespace HBMP
         public static Dictionary<byte, GameObject> boneDictionary = new Dictionary<byte, GameObject>();
         private byte currentBoneIndex = 0;
 
+        public static GameObject head;
+
+        public static List<ulong> idsReadyForPlayerInfo = new List<ulong>();
+
         public override void OnApplicationStart()
         {
-            MessageHandler.RegisterHandlers();
-            SteamManager.Init();
             DataDirectory.Initialize();
+            GameSDK.LoadGameSDK();
+            PacketHandler.RegisterHandlers();
+            SteamIntegration.Init();
+            DiscordRichPresence.Init();
             VrMenuPageBuilder builder = VrMenuPageBuilder.Builder();
 
             builder.AddButton(new VrMenuButton("Start Server", () =>
@@ -41,13 +47,13 @@ namespace HBMP
 
             builder.AddButton(new VrMenuButton("End Server/Disconnect", () => 
             {
-                if (SteamManager.Instance.isConnectedToLobby && SteamManager.Instance.isHost)
+                if (SteamIntegration.hasLobby && SteamIntegration.isHost)
                 {
-                    SteamManager.Disconnect(false);
+                    SteamIntegration.Disconnect(false);
                 }
-                else if (SteamManager.Instance.isConnectedToLobby && !SteamManager.Instance.isHost)
+                else if (SteamIntegration.hasLobby && !SteamIntegration.isHost)
                 {
-                    SteamManager.Disconnect(false);
+                    SteamIntegration.Disconnect(false);
                 }
             }, Color.red
                 ));
@@ -59,6 +65,8 @@ namespace HBMP
                     page.Open();
                 }, Color.blue
             ));
+            
+            
         }
         public override void OnSceneWasLoaded(int buildIndex, string sceneName)
         {
@@ -70,20 +78,23 @@ namespace HBMP
             SyncedObject.CleanData();
             SyncedObject.CloneAllWeapons();
             
-            if (SteamManager.Instance.isHost)
+            head = GameObject.Find("[HARD BULLET PLAYER]/HexaBody/Pelvis/CameraRig/FloorOffset/Scaler/Camera")
+                .gameObject;
+            
+            if (SteamIntegration.isHost)
             {
-                PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.SceneTransferMessage, new SceneTransferData()
+                PacketByteBuf message = PacketHandler.CompressMessage(PacketType.SceneTransferMessage, new SceneTransferData()
                 {
                     sceneIndex = buildIndex
                 });
                 
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, message);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, message.getBytes());
             }
         }
         
         public override void OnFixedUpdate()
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
                 foreach (EnemyRoot spawnedRoot in SyncedObject.spawnedEnemies)
                 {
@@ -110,15 +121,19 @@ namespace HBMP
                     debugRepresentation.UpdateTransforms(simplifiedTransformsArray);
                 }
                 
-                sendBones();
+                //sendBones();
 
-                PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.PlayerUpdateMessage, new PlayerSyncMessageData()
+                foreach (PlayerRepresentation representation in PlayerRepresentation.representations.Values) {
+                    representation.Update();
+                }
+
+                PacketByteBuf message = PacketHandler.CompressMessage(PacketType.PlayerUpdateMessage, new PlayerSyncMessageData()
                 {
-                    userId =  SteamManager.currentId,
+                    userId =  SteamIntegration.currentId,
                     simplifiedTransforms = simplifiedTransformsArray
                 });
                 
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Unreliable, message);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Unreliable, message.getBytes());
             }
         }
         
@@ -146,46 +161,42 @@ namespace HBMP
                 SimplifiedTransform simplifiedTransform = new SimplifiedTransform(bone.transform.position,
                     Quaternion.Euler(bone.transform.eulerAngles));
                 
-                PacketByteBuf message = MessageHandler.CompressMessage(NetworkMessageType.IkUpdateMessage, new IkSyncMessageData()
+                PacketByteBuf message = PacketHandler.CompressMessage(PacketType.IkUpdateMessage, new IkSyncMessageData()
                 {
-                    userId =  SteamManager.currentId,
+                    userId =  SteamIntegration.currentId,
                     boneIndex = boneId,
                     simplifiedTransform = simplifiedTransform
                 });
                 
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Unreliable, message);
+                SteamPacketNode.BroadcastMessageToSetGroup(NetworkChannel.Unreliable, message.getBytes(), idsReadyForPlayerInfo);
             }
         }
 
         public override void OnApplicationQuit()
         {
-            SteamManager.Disconnect(true);
+            SteamIntegration.Disconnect(true);
             base.OnApplicationQuit();
-        }
-
-        public override void OnLateUpdate() {
-            SteamPacketNode.Flush();
-            SteamPacketNode.Callbacks();
         }
 
         public override void OnUpdate()
         {
-            if (SteamManager.Instance != null)
+            if (SteamIntegration.Instance != null)
             {
-                SteamManager.Instance.Update();
+                SteamIntegration.Instance.Update();
                 if (Input.GetKeyDown(KeyCode.H))
                 {
-                    if (SteamManager.Instance.isConnectedToLobby == false)
+                    if (SteamIntegration.hasLobby == false)
                     {
                         CreateFriendLobby();
                     }
                 }
             }
+            DiscordRichPresence.Update();
         }
 
         private async void CreateFriendLobby()
         {
-            await SteamManager.Instance.CreateFriendLobby();
+            await SteamIntegration.Instance.CreateLobby();
         }
     }
 

@@ -25,6 +25,16 @@ namespace HBMP.Messages
         {
             return bytes;
         }
+        
+        public byte[] GetRemainingBytes()
+        {
+            var finalBytes = new List<byte>();
+            for (int i = byteIndex; i < bytes.Length; i++) {
+                finalBytes.Add(getBytes()[i]);
+            }
+
+            return finalBytes.ToArray();
+        }
 
         public void WriteBytes(byte[] bytesToAdd)
         {
@@ -98,9 +108,9 @@ namespace HBMP.Messages
             return longNum;
         }
 
-        public void WriteType(NetworkMessageType networkMessageType)
+        public void WriteType(PacketType packetType)
         {
-            byteList.Add((byte)networkMessageType);
+            byteList.Add((byte)packetType);
         }
 
         public void WriteString(String str)

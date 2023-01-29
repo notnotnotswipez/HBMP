@@ -10,8 +10,8 @@ namespace HBMP.Messages
         public static void CompressAndSendMessage(ushort modMessageId, MessageData messageData)
         {
             PacketByteBuf packetByteBuf =
-                MessageHandler.CompressMessage(modMessageId, messageData);
-            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
+                PacketHandler.CompressMessage(modMessageId, messageData);
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf.getBytes());
         }
 
         public static void RegisterModMessage(ushort modMessageId, ModExtensionMessage modExtensionMessage)

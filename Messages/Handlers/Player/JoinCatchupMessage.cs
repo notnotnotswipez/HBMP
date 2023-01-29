@@ -16,13 +16,18 @@ namespace HBMP.Messages.Handlers
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
             MelonLogger.Msg("Caught up with server host!");
             ushort lastId = packetByteBuf.ReadUShort();
             ushort lastGroupId = packetByteBuf.ReadUShort();
             SyncedObject.lastId = lastId;
             SyncedObject.lastGroupId = lastGroupId;
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

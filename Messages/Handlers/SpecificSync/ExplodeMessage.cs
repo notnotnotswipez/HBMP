@@ -11,16 +11,16 @@ namespace HBMP.Messages.Handlers
         {
             ExplodeMessageData explodeMessageData = (ExplodeMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(explodeMessageData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(explodeMessageData.userId));
             packetByteBuf.WriteUShort(explodeMessageData.objectId);
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
             if (syncedObject)
@@ -32,6 +32,11 @@ namespace HBMP.Messages.Handlers
                 }
                 explodeable.Explode();
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

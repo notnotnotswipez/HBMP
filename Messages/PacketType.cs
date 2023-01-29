@@ -6,7 +6,7 @@ using MelonLoader;
 
 namespace HBMP.Messages
 {
-    public enum NetworkMessageType : byte {
+    public enum PacketType : byte {
         PlayerUpdateMessage    = 0,
         ShortIdUpdateMessage = 1,
         TransformUpdateMessage = 2,
@@ -21,6 +21,9 @@ namespace HBMP.Messages
         EnemyDestroyMessage = 11,
         SceneTransferMessage = 12,
         IkUpdateMessage = 13,
-        ModMessage = 14
+        ModMessage = 14,
+        ClientDistributionMessage = 15,
+        PlayerGreetingMessage = 16,
+        PlayerConfirmationMessage = 17
     }
 } 

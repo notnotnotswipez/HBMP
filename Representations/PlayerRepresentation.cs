@@ -14,7 +14,10 @@ namespace HBMP.Representations
     public class PlayerRepresentation
     {
         public GameObject playerRep;
-        public GameObject nameTag;
+        
+        public GameObject nameTagObject;
+        public Transform nameTagPos;
+        
         public GameObject ikBody;
         public static Dictionary<SteamId, PlayerRepresentation> representations = new Dictionary<SteamId, PlayerRepresentation>();
         public Dictionary<byte, GameObject> boneDictionary = new Dictionary<byte, GameObject>();
@@ -47,13 +50,7 @@ namespace HBMP.Representations
             }
 
             playerRep = GameObject.Instantiate(Mod.player, new Vector3(0, 1, 0), Quaternion.identity);
-            nameTag = GameObject.Instantiate(GameObject.Find("notification(Clone)"));
-            nameTag.name = "nametag";
-            nameTag.GetComponent<TMP_Text>().text = user.Name;
-            nameTag.GetComponent<TMP_Text>().horizontalAlignment = HorizontalAlignmentOptions.Center;
-            nameTag.GetComponent<TMP_Text>().autoSizeTextContainer = true;
-            nameTag.GetComponent<TMP_Text>().enableAutoSizing = true;
-            nameTag.transform.localScale = new Vector3(0.02f, 0.02f, 0.02f);
+            MakeNametag();
 
             playerRep.name = "(PlayerRep)"+user.Name;
             username = user.Name;
@@ -63,7 +60,41 @@ namespace HBMP.Representations
             populateBoneDictionary(ikBody.transform.Find("HexaBody").Find("PlayerModel").Find("PlayerModel").Find("root"));
             GameObject.DontDestroyOnLoad(playerRep);
             GameObject.DontDestroyOnLoad(ikBody);
+            GameObject.DontDestroyOnLoad(nameTagObject);
             currentBoneId = 0;
+            
+            
+        }
+        
+        public void MakeNametag()
+        {
+            nameTagObject = new GameObject($"RepName {username}");
+            
+            Canvas textCanvas = nameTagObject.AddComponent<Canvas>();
+            
+            textCanvas.renderMode = RenderMode.WorldSpace;
+            nameTagPos = nameTagObject.transform;
+            nameTagPos.localScale = Vector3.one / 200.0f;
+
+            TextMeshProUGUI nameTagText = nameTagObject.AddComponent<TextMeshProUGUI>();
+            
+            nameTagText.text = username;
+            nameTagText.alignment = TextAlignmentOptions.Midline;
+            nameTagText.enableAutoSizing = true;
+            
+        }
+
+        public void Update()
+        {
+            if (nameTagPos)
+            {
+                if (MainMod.head)
+                {
+                    nameTagPos.position = head.transform.position + Vector3.up * 0.4f;
+                    nameTagPos.rotation = Quaternion.LookRotation(
+                        Vector3.Normalize(nameTagPos.position - MainMod.head.transform.position), Vector3.up);
+                }
+            }
         }
 
         public void UpdateTransforms(SimplifiedTransform[] simplifiedTransforms)
@@ -111,12 +142,9 @@ namespace HBMP.Representations
             handL = playerRep.transform.Find("1_PlayerHandL");
             ikBody.name = username + "Body";
             
-            handR.gameObject.SetActive(false);
-            handL.gameObject.SetActive(false);
+            //handR.gameObject.SetActive(false);
+            //handL.gameObject.SetActive(false);
             head = playerRep.transform.Find("1_PlayerHead");
-            nameTag.transform.parent = head.transform;
-            nameTag.transform.localPosition = new Vector3(0, 0.2f, -0.1f);
-            nameTag.transform.rotation = Quaternion.Euler(0, 180, 0);
 
             GameObject cosmetics = head.Find("Cosmetics").gameObject;
             GameObject toEnable = null;

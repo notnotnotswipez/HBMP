@@ -19,16 +19,16 @@ namespace HBMP.Messages.Handlers
             GunshotMessageData gunshotMessageData = (GunshotMessageData)messageData;
             
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(gunshotMessageData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(gunshotMessageData.userId));
             packetByteBuf.WriteUShort(gunshotMessageData.objectId);
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             ushort objectId = packetByteBuf.ReadUShort();
             
             SyncedObject syncedObject = SyncedObject.GetSyncedObject(objectId);
@@ -82,6 +82,11 @@ namespace HBMP.Messages.Handlers
                     PatchVariables.shouldIgnoreFire = false;
                 }
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new NotImplementedException();
         }
     }
 

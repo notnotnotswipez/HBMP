@@ -9,18 +9,23 @@ namespace HBMP.Messages.Handlers
         {
             DisconnectMessageData disconnectMessageData = (DisconnectMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(disconnectMessageData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(disconnectMessageData.userId));
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            if (SteamManager.Instance.isConnectedToLobby)
+            if (SteamIntegration.hasLobby)
             {
-                SteamManager.Disconnect(false);
+                SteamIntegration.Disconnect(false);
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
     

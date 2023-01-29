@@ -15,11 +15,16 @@ namespace HBMP.Messages.Handlers
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
             int sceneIndex = (int) packetByteBuf.ReadByte();
             MelonLogger.Msg("Attempting to load scene with scene index: "+sceneIndex);
             SceneManager.LoadScene(sceneIndex);
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

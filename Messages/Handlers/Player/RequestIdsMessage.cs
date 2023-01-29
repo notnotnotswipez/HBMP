@@ -11,27 +11,32 @@ namespace HBMP.Messages.Handlers
             RequestIdsMessageData requestIdsMessageData = (RequestIdsMessageData)messageData;
 
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(requestIdsMessageData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(requestIdsMessageData.userId));
             packetByteBuf.create();
 
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetByteId(packetByteBuf.ReadByte());
-            if (SteamManager.Instance.isHost)
+            SteamId userId = SteamIntegration.GetByteId(packetByteBuf.ReadByte());
+            if (SteamIntegration.isHost)
             {
-                foreach (KeyValuePair<byte, ulong> valuePair in SteamManager.byteIds) {
+                foreach (KeyValuePair<byte, ulong> valuePair in SteamIntegration.byteIds) {
                     ShortIdMessageData addMessageData = new ShortIdMessageData()
                     {
                         userId = valuePair.Value,
                         byteId = valuePair.Key,
                     };
-                    PacketByteBuf shortBuf = MessageHandler.CompressMessage(NetworkMessageType.ShortIdUpdateMessage, addMessageData);
-                    SteamPacketNode.SendMessage(userId, NetworkChannel.Reliable, shortBuf);
+                    PacketByteBuf shortBuf = PacketHandler.CompressMessage(PacketType.ShortIdUpdateMessage, addMessageData);
+                    SteamPacketNode.SendMessage(userId, NetworkChannel.Reliable, shortBuf.getBytes());
                 }
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 

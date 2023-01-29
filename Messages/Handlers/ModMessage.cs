@@ -10,7 +10,7 @@ namespace HBMP.Messages.Handlers
             return new PacketByteBuf();
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
             ushort extensionId = packetByteBuf.ReadUShort();
             if (Extensions.ContainsKey(extensionId))
@@ -18,6 +18,11 @@ namespace HBMP.Messages.Handlers
                 ModExtensionMessage modExtensionMessage = Extensions[extensionId];
                 modExtensionMessage.HandleData(packetByteBuf);
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
 
         public PacketByteBuf CompressData(MessageData messageData, ushort extensionId)

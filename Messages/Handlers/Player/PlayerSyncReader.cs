@@ -19,7 +19,7 @@ namespace HBMP.Messages.Handlers
             PlayerSyncMessageData playerSyncMessageData = (PlayerSyncMessageData)messageData;
             List<byte> rawBytes = new List<byte>();
 
-            rawBytes.Add(SteamManager.GetByteId(playerSyncMessageData.userId));
+            rawBytes.Add(SteamIntegration.GetByteId(playerSyncMessageData.userId));
 
             for (int r = 0; r < playerSyncMessageData.simplifiedTransforms.Length; r++)
                 rawBytes.AddRange(playerSyncMessageData.simplifiedTransforms[r].GetBytes());
@@ -31,23 +31,23 @@ namespace HBMP.Messages.Handlers
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
             if (packetByteBuf.getBytes().Length <= 0)
                 throw new IndexOutOfRangeException();
 
             int index = 0;
 
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.getBytes()[index++]);
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.getBytes()[index++]);
             if (userId == 0)
             {
                 RequestIdsMessageData requestIdsMessageData = new RequestIdsMessageData()
                 {
-                    userId = SteamManager.currentId
+                    userId = SteamIntegration.currentId
                 };
                 PacketByteBuf shortBuf =
-                    MessageHandler.CompressMessage(NetworkMessageType.RequestIdsMessage, requestIdsMessageData);
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, shortBuf);
+                    PacketHandler.CompressMessage(PacketType.RequestIdsMessage, requestIdsMessageData);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, shortBuf.getBytes());
                 return;
             }
 
@@ -72,12 +72,17 @@ namespace HBMP.Messages.Handlers
                     "Something is wrong, player representation sent update but doesnt exist, requesting updates from host.");
                 RequestIdsMessageData requestIdsMessageData = new RequestIdsMessageData()
                 {
-                    userId = SteamManager.currentId
+                    userId = SteamIntegration.currentId
                 };
                 PacketByteBuf shortBuf =
-                    MessageHandler.CompressMessage(NetworkMessageType.RequestIdsMessage, requestIdsMessageData);
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, shortBuf);
+                    PacketHandler.CompressMessage(PacketType.RequestIdsMessage, requestIdsMessageData);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, shortBuf.getBytes());
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new NotImplementedException();
         }
     }
 

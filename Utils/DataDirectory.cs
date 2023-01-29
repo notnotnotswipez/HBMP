@@ -10,7 +10,7 @@ namespace HBMP.Utils
 
         public static void Initialize() {
             string appdata = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            persistentPath = appdata + "/HBMPMod/";
+            persistentPath = appdata + "/HBMPSteamMod/";
             ValidateDirectory(persistentPath);
         }
 

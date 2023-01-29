@@ -1,79 +1,187 @@
-using System;
 using System.Collections.Generic;
 using HBMP.Messages;
+using HBMP.Messages.Handlers.Network;
 using Steamworks;
+using Steamworks.Data;
 
 namespace HBMP.Nodes
 {
     public class SteamPacketNode
     {
-        private static List<QueuedPacket> queuedBufs = new List<QueuedPacket>();
+        public static Dictionary<ulong, Connection> cachedConnections = new Dictionary<ulong, Connection>();
 
-        public static void BroadcastMessage(NetworkChannel channel, PacketByteBuf packetByteBuf)
+        public static void BroadcastMessage(NetworkChannel channel, byte[] packetByteBuf, bool ignoreSelf = true)
         {
-            foreach (var connectedUser in SteamManager.connectedIds)
+            if (!SteamIntegration.hasLobby) return;
+            
+            SendType p2PSend = SteamIntegration.networkChannels[channel];
+            if (SteamIntegration.isHost)
             {
-                queuedBufs.Add(new QueuedPacket()
+                foreach (var connection in cachedConnections)
                 {
-                    _packetByteBuf = packetByteBuf,
-                    _steamId = connectedUser,
-                    channel = channel
-                });
-            }
-        }
-
-        public static void SendMessage(SteamId steamId, NetworkChannel channel, PacketByteBuf packetByteBuf)
-        {
-            queuedBufs.Add(new QueuedPacket()
-            {
-                _packetByteBuf = packetByteBuf,
-                _steamId = steamId,
-                channel = channel
-            });
-        }
-
-        public static void Flush()
-        {
-            foreach (var packets in queuedBufs)
-            {
-                P2PSend sendType = SteamManager.networkChannels[packets.channel];
-                bool success = SteamNetworking.SendP2PPacket(packets._steamId, packets._packetByteBuf.getBytes(), -1, (int)packets.channel, sendType);
-            }
-            queuedBufs.Clear();
-        }
-
-        public static void Callbacks()
-        {
-            foreach (NetworkChannel channel in SteamManager.networkChannels.Keys)
-            {
-                while (SteamNetworking.IsP2PPacketAvailable((int)channel))
-                {
-                    var packet = SteamNetworking.ReadP2PPacket((int)channel);
-                    if (packet.HasValue)
+                    if (ignoreSelf)
                     {
-                        byte[] data = packet.Value.Data;
-                        if (data.Length <= 0) // Idk
-                            throw new Exception("Data was invalid!");
-                 
-                        byte messageType = data[0];
-                        byte[] realData = new byte[data.Length - sizeof(byte)];
+                        if (connection.Key == SteamIntegration.currentId) continue;
+                    }
 
-                        for (int b = sizeof(byte); b < data.Length; b++)
-                            realData[b - sizeof(byte)] = data[b];
+                    connection.Value.SendMessage(packetByteBuf, p2PSend);
+                }
+            }
+            else
+            {
+                List<ulong> players = new List<ulong>();
+                foreach (var playerId in SteamIntegration.connectedIds)
+                {
+                    if (playerId != SteamIntegration.currentId)
+                    {
+                        players.Add(playerId);
+                    }
+                }
 
-                        PacketByteBuf packetByteBuf = new PacketByteBuf(realData);
-             
-                        MessageHandler.ReadMessage((NetworkMessageType)messageType, packetByteBuf, 0);
+                ClientDistributionData clientDistributionData = new ClientDistributionData()
+                {
+                    playerIds = players,
+                    channel = channel,
+                    data = new PacketByteBuf(packetByteBuf)
+                };
+
+                PacketByteBuf finalBuff =
+                    PacketHandler.CompressMessage(PacketType.ClientDistributionMessage, clientDistributionData);
+
+                SteamIntegration.clientSocket?.Connection.SendMessage(finalBuff.getBytes());
+            }
+        }
+
+        public static void BroadcastMessageExcept(NetworkChannel channel, byte[] packetByteBuf, ulong excluded,
+            bool ignoreSelf = true)
+        {
+            if (!SteamIntegration.hasLobby) return;
+            
+            SendType p2PSend = SteamIntegration.networkChannels[channel];
+            if (SteamIntegration.isHost)
+            {
+                foreach (var connectedUser in cachedConnections)
+                {
+                    if (connectedUser.Key == excluded) return;
+                    if (ignoreSelf)
+                    {
+                        if (connectedUser.Key == SteamIntegration.currentId) return;
+                    }
+
+                    
+                    
+                    Connection connection = cachedConnections[connectedUser.Key];
+                    connection.SendMessage(packetByteBuf, p2PSend);
+                }
+            }
+            else
+            {
+                
+                List<ulong> players = new List<ulong>();
+                foreach (var playerId in SteamIntegration.connectedIds)
+                {
+                    if (playerId == SteamIntegration.currentId) return;
+                    if (playerId == excluded) return;
+                    players.Add(playerId);
+                }
+
+                ClientDistributionData clientDistributionData = new ClientDistributionData()
+                {
+                    playerIds = players,
+                    channel = channel,
+                    data = new PacketByteBuf(packetByteBuf)
+                };
+
+                PacketByteBuf finalBuff =
+                    PacketHandler.CompressMessage(PacketType.ClientDistributionMessage, clientDistributionData);
+
+                SteamIntegration.clientSocket?.Connection.SendMessage(finalBuff.getBytes());
+            }
+        }
+
+        public static void BroadcastMessageToSetGroup(NetworkChannel channel, byte[] packetByteBuf, List<ulong> restOfIds, bool ignoreSelf = true)
+        {
+            if (!SteamIntegration.hasLobby) return;
+            
+            SendType p2PSend = SteamIntegration.networkChannels[channel];
+            if (SteamIntegration.isHost)
+            {
+                foreach (var connectedUser in restOfIds)
+                {
+                    if (ignoreSelf)
+                    {
+                        if (connectedUser == SteamIntegration.currentId) return;
+                    }
+                    
+                    if (cachedConnections.ContainsKey(connectedUser))
+                    {
+                        Connection connection = cachedConnections[connectedUser];
+                        connection.SendMessage(packetByteBuf, p2PSend);
                     }
                 }
             }
+            else
+            {
+                ClientDistributionData clientDistributionData = new ClientDistributionData()
+                {
+                    playerIds = restOfIds,
+                    channel = channel,
+                    data = new PacketByteBuf(packetByteBuf)
+                };
+
+                PacketByteBuf finalBuff =
+                    PacketHandler.CompressMessage(PacketType.ClientDistributionMessage, clientDistributionData);
+
+                SteamIntegration.clientSocket?.Connection.SendMessage(finalBuff.getBytes());
+            }
         }
 
-        class QueuedPacket
+        public static void SendMessageDirectToServer(NetworkChannel channel, byte[] packetByteBuf)
         {
-            public PacketByteBuf _packetByteBuf;
-            public SteamId _steamId;
-            public NetworkChannel channel;
+            if (!SteamIntegration.hasLobby) return;
+
+            SendType p2PSend = SteamIntegration.networkChannels[channel];
+            SteamIntegration.clientSocket?.Connection.SendMessage(packetByteBuf, p2PSend);
+        }
+
+        public static void SendMessage(SteamId steamId, NetworkChannel channel, byte[] packetByteBuf, bool ignoreSelf = true)
+        {
+            if (!SteamIntegration.hasLobby) return;
+            
+            if (steamId == SteamIntegration.currentId) return;
+
+            SendType p2PSend = SteamIntegration.networkChannels[channel];
+            
+            if (SteamIntegration.isHost)
+            {
+                if (ignoreSelf)
+                {
+                    if (steamId == SteamIntegration.currentId) return;
+                }
+
+                if (cachedConnections.ContainsKey(steamId))
+                {
+                    Connection connection = cachedConnections[steamId];
+                    connection.SendMessage(packetByteBuf, p2PSend);
+                }
+            }
+            else
+            {
+                List<ulong> players = new List<ulong>();
+                players.Add(steamId);
+                
+                ClientDistributionData clientDistributionData = new ClientDistributionData()
+                {
+                    playerIds = players,
+                    channel = channel,
+                    data = new PacketByteBuf(packetByteBuf)
+                };
+
+                PacketByteBuf finalBuff =
+                    PacketHandler.CompressMessage(PacketType.ClientDistributionMessage, clientDistributionData);
+
+                SteamIntegration.clientSocket?.Connection.SendMessage(finalBuff.getBytes());
+            }
         }
     }
 }

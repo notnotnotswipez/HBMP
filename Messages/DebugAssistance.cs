@@ -2,9 +2,9 @@ namespace HBMP.Messages
 {
     public class DebugAssistance
     {
-        public static void SimulatePacket(NetworkMessageType netType, MessageData messageData)
+        public static void SimulatePacket(PacketType netType, MessageData messageData)
         {
-            PacketByteBuf packetByteBuf = MessageHandler.CompressMessage(netType, messageData);
+            PacketByteBuf packetByteBuf = PacketHandler.CompressMessage(netType, messageData);
             
             byte[] data = packetByteBuf.getBytes();
             byte messageType = data[0];
@@ -15,7 +15,7 @@ namespace HBMP.Messages
 
             PacketByteBuf secondBuf = new PacketByteBuf(realData);
             
-            MessageHandler.ReadMessage((NetworkMessageType)messageType, secondBuf, 0);
+            PacketHandler.ReadMessage((PacketType)messageType, secondBuf, 0, false);
         }
     }
 }

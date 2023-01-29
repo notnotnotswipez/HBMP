@@ -79,7 +79,7 @@ namespace HBMP.Object
             if (!IsClientSimulated())
             {
                 MelonLogger.Msg("Transferred ownership of sync Id: "+currentId);
-                SteamId currentUserId = SteamManager.currentId;
+                SteamId currentUserId = SteamIntegration.currentId;
 
                 SetOwner(currentUserId);
                 OwnerChangeData ownerQueueChangeData = new OwnerChangeData()
@@ -87,9 +87,9 @@ namespace HBMP.Object
                     userId = currentUserId,
                     objectId = currentId
                 };
-                PacketByteBuf packetByteBuf = MessageHandler.CompressMessage(NetworkMessageType.OwnerChangeMessage,
+                PacketByteBuf packetByteBuf = PacketHandler.CompressMessage(PacketType.OwnerChangeMessage,
                     ownerQueueChangeData);
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, packetByteBuf);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, packetByteBuf.getBytes());
 
                 MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
                 foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
@@ -118,9 +118,9 @@ namespace HBMP.Object
                 userId = userId,
                 objectId = currentId
             };
-            PacketByteBuf packetByteBuf = MessageHandler.CompressMessage(NetworkMessageType.OwnerChangeMessage,
+            PacketByteBuf packetByteBuf = PacketHandler.CompressMessage(PacketType.OwnerChangeMessage,
                 ownerQueueChangeData);
-            SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, packetByteBuf);
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Reliable, packetByteBuf.getBytes());
 
             MelonLogger.Msg("Transferring ownership of whole group ID: "+groupId);
             foreach (SyncedObject relatedSync in relatedSyncedObjects[groupId])
@@ -193,7 +193,7 @@ namespace HBMP.Object
 
         public static void Sync(GameObject desiredSync)
         {
-            if (!SteamManager.Instance.isConnectedToLobby)
+            if (!SteamIntegration.hasLobby)
             {
                 return;
             }
@@ -249,18 +249,18 @@ namespace HBMP.Object
             ushort groupId = GetGroupId();
             EnemySpawnMessageData enemySpawnMessageData = new EnemySpawnMessageData()
             {
-                userId = SteamManager.currentId,
+                userId = SteamIntegration.currentId,
                 groupId = groupId,
                 startingObjectId = lastId,
                 shouldRevertToOwner = shouldRevert
             };
 
             PacketByteBuf packetByteBuf =
-                MessageHandler.CompressMessage(NetworkMessageType.EnemySpawnMessage, enemySpawnMessageData);
+                PacketHandler.CompressMessage(PacketType.EnemySpawnMessage, enemySpawnMessageData);
 
-            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf.getBytes());
 
-            SteamId currentUser = SteamManager.currentId;
+            SteamId currentUser = SteamIntegration.currentId;
             GameObject spawnedNPC = enemyRoot.gameObject;
             foreach (Rigidbody rigidbody in GetProperRigidBodies(spawnedNPC.transform, true)) {
                 GameObject npcObj = rigidbody.gameObject;
@@ -343,7 +343,7 @@ namespace HBMP.Object
 
             syncedObject.groupId = groupId;
             syncedObject.currentId = syncedId;
-            syncedObject.SetOwner(SteamManager.currentId);
+            syncedObject.SetOwner(SteamIntegration.currentId);
             syncedObjects.Add(gameObject);
             if (!syncedObjectIds.ContainsKey(syncedId))
             {
@@ -356,16 +356,16 @@ namespace HBMP.Object
 
             InitializeSyncData initializeSyncData = new InitializeSyncData()
             {
-                userId = SteamManager.currentId,
+                userId = SteamIntegration.currentId,
                 objectId = syncedId,
                 objectName = syncObject,
                 groupId = groupId
             };
             
             PacketByteBuf packetByteBuf =
-                MessageHandler.CompressMessage(NetworkMessageType.InitializeSyncMessage, initializeSyncData);
+                PacketHandler.CompressMessage(PacketType.InitializeSyncMessage, initializeSyncData);
             
-            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf);
+            SteamPacketNode.BroadcastMessage(NetworkChannel.Object, packetByteBuf.getBytes());
         }
 
         private void OnOwnershipChange(bool owning)
@@ -443,9 +443,9 @@ namespace HBMP.Object
                     }
                 }
 
-                if (!SteamManager.connectedIds.Contains(simulatorId))
+                if (!SteamIntegration.connectedIds.Contains(simulatorId))
                 {
-                    SetOwner(SteamManager.Instance.currentLobby.Owner.Id);
+                    SetOwner(SteamIntegration.Instance.currentLobby.Owner.Id);
                 }
             }
         }
@@ -628,7 +628,7 @@ namespace HBMP.Object
 
         public bool IsClientSimulated()
         {
-            return simulatorId == SteamManager.currentId;
+            return simulatorId == SteamIntegration.currentId;
         }
 
         public static SyncedObject GetSyncedObject(ushort objectId)
@@ -665,7 +665,7 @@ namespace HBMP.Object
 
         public void FixedUpdate()
         {
-            if (!SteamManager.Instance.isConnectedToLobby)
+            if (!SteamIntegration.hasLobby)
             {
                 return;
             }
@@ -679,13 +679,13 @@ namespace HBMP.Object
                 TransformUpdateData transformUpdateData = new TransformUpdateData()
                 {
                     objectId = currentId,
-                    userId = SteamManager.currentId,
+                    userId = SteamIntegration.currentId,
                     sTransform = simplifiedTransform
                 };
                 
                 PacketByteBuf packetByteBuf =
-                    MessageHandler.CompressMessage(NetworkMessageType.TransformUpdateMessage, transformUpdateData);
-                SteamPacketNode.BroadcastMessage(NetworkChannel.Unreliable, packetByteBuf);
+                    PacketHandler.CompressMessage(PacketType.TransformUpdateMessage, transformUpdateData);
+                SteamPacketNode.BroadcastMessage(NetworkChannel.Unreliable, packetByteBuf.getBytes());
             }
 
             UpdateStoredPositions();

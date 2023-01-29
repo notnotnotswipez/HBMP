@@ -11,7 +11,7 @@ namespace HBMP.Messages.Handlers
         {
             IkSyncMessageData ikSyncMessageData = (IkSyncMessageData)messageData;
             PacketByteBuf packetByteBuf = new PacketByteBuf();
-            packetByteBuf.WriteByte(SteamManager.GetByteId(ikSyncMessageData.userId));
+            packetByteBuf.WriteByte(SteamIntegration.GetByteId(ikSyncMessageData.userId));
             packetByteBuf.WriteByte(ikSyncMessageData.boneIndex);
             packetByteBuf.WriteSimpleTransform(ikSyncMessageData.simplifiedTransform);
             packetByteBuf.create();
@@ -19,9 +19,9 @@ namespace HBMP.Messages.Handlers
             return packetByteBuf;
         }
 
-        public override void ReadData(PacketByteBuf packetByteBuf, long sender)
+        public override void ReadData(PacketByteBuf packetByteBuf, ulong sender)
         {
-            SteamId userId = SteamManager.GetLongId(packetByteBuf.ReadByte());
+            SteamId userId = SteamIntegration.GetLongId(packetByteBuf.ReadByte());
             byte path = packetByteBuf.ReadByte();
             List<byte> transformBytes = new List<byte>();
             for (int i = packetByteBuf.byteIndex; i < packetByteBuf.getBytes().Length; i++) {
@@ -34,6 +34,11 @@ namespace HBMP.Messages.Handlers
                 PlayerRepresentation playerRepresentation = PlayerRepresentation.representations[userId];
                 playerRepresentation.updateIkTransform(path, simpleTransform);
             }
+        }
+
+        public override void ReadDataServer(PacketByteBuf packetByteBuf, ulong sender)
+        {
+            throw new System.NotImplementedException();
         }
     }
 
